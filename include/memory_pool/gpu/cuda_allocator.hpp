@@ -4,6 +4,7 @@
 #include "gpu_memory_pool.hpp"
 #include "cuda_utils.hpp"
 #include <vector>
+#include <deque>
 #include <map>
 #include <cstddef>
 
@@ -119,9 +120,9 @@ class CudaVariableSizeAllocator : public CudaAllocatorBase {
 
     // Memory region structure
     struct MemoryRegion {
-        void*              deviceMemory;
-        size_t             size;
-        std::vector<Block> blocks;
+        void*             deviceMemory;
+        size_t            size;
+        std::deque<Block> blocks;
 
         MemoryRegion(void* mem, size_t s) : deviceMemory(mem), size(s) {}
     };
