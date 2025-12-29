@@ -1,0 +1,107 @@
+cmake_minimum_required(VERSION 3.14)
+project(memory_pool VERSION 0.1.0 LANGUAGES CXX CUDA)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Set CUDA standard
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+# Find CUDA package
+find_package(CUDA 11.0 REQUIRED)
+include_directories(${CUDA_INCLUDE_DIRS})
+
+# Add include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Set compiler flags
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+endif()
+
+# Set CUDA flags
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_60")
+set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G -g -O0")
+set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+
+# Library source files
+set(SOURCES
+    src/common.cpp
+    src/memory_pool_manager.cpp
+    src/cpu/cpu_memory_pool.cpp
+    src/cpu/fixed_size_allocator.cpp
+    src/cpu/variable_size_allocator.cpp
+    src/gpu/gpu_memory_pool.cpp
+    src/gpu/cuda_allocator.cpp
+    src/gpu/cuda_utils.cpp
+    src/stats/memory_stats.cpp
+    src/stats/performance_tracker.cpp
+    src/utils/thread_safety.cpp
+    src/utils/debug_tools.cpp
+    src/utils/error_handling.cpp
+)
+
+# Create the library
+add_library(memory_pool ${SOURCES})
+target_link_libraries(memory_pool ${CUDA_LIBRARIES})
+
+# Examples
+add_executable(basic_example examples/basic_usage.cpp)
+target_link_libraries(basic_example memory_pool)
+
+add_executable(advanced_example examples/advanced_usage.cpp)
+target_link_libraries(advanced_example memory_pool)
+
+add_executable(cpu_example examples/cpu_examples.cpp)
+target_link_libraries(cpu_example memory_pool)
+
+add_executable(gpu_example examples/gpu_examples.cpp)
+target_link_libraries(gpu_example memory_pool)
+
+# Enable testing
+enable_testing()
+
+# Unit tests
+add_executable(cpu_tests tests/unit/cpu_tests.cpp)
+target_link_libraries(cpu_tests memory_pool)
+add_test(NAME cpu_tests COMMAND cpu_tests)
+
+add_executable(gpu_tests tests/unit/gpu_tests.cpp)
+target_link_libraries(gpu_tests memory_pool)
+add_test(NAME gpu_tests COMMAND gpu_tests)
+
+add_executable(manager_tests tests/unit/manager_tests.cpp)
+target_link_libraries(manager_tests memory_pool)
+add_test(NAME manager_tests COMMAND manager_tests)
+
+# Integration tests
+add_executable(cpu_gpu_integration_tests tests/integration/cpu_gpu_integration_tests.cpp)
+target_link_libraries(cpu_gpu_integration_tests memory_pool)
+add_test(NAME cpu_gpu_integration_tests COMMAND cpu_gpu_integration_tests)
+
+add_executable(thread_safety_tests tests/integration/thread_safety_tests.cpp)
+target_link_libraries(thread_safety_tests memory_pool)
+add_test(NAME thread_safety_tests COMMAND thread_safety_tests)
+
+# Performance tests
+add_executable(cpu_benchmarks tests/performance/cpu_benchmarks.cpp)
+target_link_libraries(cpu_benchmarks memory_pool)
+
+add_executable(gpu_benchmarks tests/performance/gpu_benchmarks.cpp)
+target_link_libraries(gpu_benchmarks memory_pool)
+
+add_executable(comparison_benchmarks tests/performance/comparison_benchmarks.cpp)
+target_link_libraries(comparison_benchmarks memory_pool)
+
+# Installation
+install(TARGETS memory_pool
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin)
+
+install(DIRECTORY include/ DESTINATION include)
