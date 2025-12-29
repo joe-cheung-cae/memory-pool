@@ -1,5 +1,5 @@
-#include "../../include/memory_pool/utils/debug_tools.hpp"
-#include "../../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/debug_tools.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <sstream>
 #include <iomanip>
 #include <cstring>

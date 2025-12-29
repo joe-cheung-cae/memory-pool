@@ -1,6 +1,6 @@
-#include "../../include/memory_pool/gpu/cuda_allocator.hpp"
-#include "../../include/memory_pool/gpu/cuda_utils.hpp"
-#include "../../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/gpu/cuda_allocator.hpp"
+#include "memory_pool/gpu/cuda_utils.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <algorithm>
 #include <limits>
 

@@ -1,8 +1,8 @@
 #ifndef MEMORY_POOL_DEBUG_TOOLS_HPP
 #define MEMORY_POOL_DEBUG_TOOLS_HPP
 
-#include "../common.hpp"
-#include "../stats/memory_stats.hpp"
+#include "memory_pool/common.hpp"
+#include "memory_pool/stats/memory_stats.hpp"
 #include <string>
 #include <vector>
 #include <map>

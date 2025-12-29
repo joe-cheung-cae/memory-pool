@@ -1,7 +1,7 @@
 #ifndef MEMORY_POOL_CUDA_UTILS_HPP
 #define MEMORY_POOL_CUDA_UTILS_HPP
 
-#include "../common.hpp"
+#include "memory_pool/common.hpp"
 #include <string>
 
 // Forward declarations for CUDA types to avoid requiring CUDA headers

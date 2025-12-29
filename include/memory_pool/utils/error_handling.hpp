@@ -1,7 +1,7 @@
 #ifndef MEMORY_POOL_ERROR_HANDLING_HPP
 #define MEMORY_POOL_ERROR_HANDLING_HPP
 
-#include "../common.hpp"
+#include "memory_pool/common.hpp"
 #include <string>
 #include <functional>
 #include <iostream>

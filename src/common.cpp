@@ -1,4 +1,4 @@
-#include "../include/memory_pool/common.hpp"
+#include "memory_pool/common.hpp"
 #include <cstdlib>
 #include <cstring>
 

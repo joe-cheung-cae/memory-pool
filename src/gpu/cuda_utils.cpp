@@ -1,5 +1,5 @@
-#include "../../include/memory_pool/gpu/cuda_utils.hpp"
-#include "../../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/gpu/cuda_utils.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <sstream>
 #include <iostream>
 

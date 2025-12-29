@@ -1,5 +1,5 @@
-#include "../../include/memory_pool/cpu/variable_size_allocator.hpp"
-#include "../../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/cpu/variable_size_allocator.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>

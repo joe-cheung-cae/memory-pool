@@ -1,5 +1,5 @@
-#include "../../include/memory_pool/memory_pool.hpp"
-#include "../../include/memory_pool/gpu/gpu_memory_pool.hpp"
+#include "memory_pool/memory_pool.hpp"
+#include "memory_pool/gpu/gpu_memory_pool.hpp"
 #include <iostream>
 #include <vector>
 #include <cstring>

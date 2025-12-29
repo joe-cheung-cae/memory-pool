@@ -1,6 +1,6 @@
-#include "../../include/memory_pool/gpu/gpu_memory_pool.hpp"
-#include "../../include/memory_pool/gpu/cuda_allocator.hpp"
-#include "../../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/gpu/gpu_memory_pool.hpp"
+#include "memory_pool/gpu/cuda_allocator.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <cstring>
 
 namespace memory_pool {

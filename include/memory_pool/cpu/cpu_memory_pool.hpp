@@ -1,9 +1,9 @@
 #ifndef MEMORY_POOL_CPU_MEMORY_POOL_HPP
 #define MEMORY_POOL_CPU_MEMORY_POOL_HPP
 
-#include "../memory_pool.hpp"
-#include "../config.hpp"
-#include "../stats/memory_stats.hpp"
+#include "memory_pool/memory_pool.hpp"
+#include "memory_pool/config.hpp"
+#include "memory_pool/stats/memory_stats.hpp"
 #include <mutex>
 #include <string>
 #include <memory>

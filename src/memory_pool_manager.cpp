@@ -1,7 +1,7 @@
-#include "../include/memory_pool/memory_pool.hpp"
-#include "../include/memory_pool/cpu/cpu_memory_pool.hpp"
-#include "../include/memory_pool/gpu/gpu_memory_pool.hpp"
-#include "../include/memory_pool/utils/error_handling.hpp"
+#include "memory_pool/memory_pool.hpp"
+#include "memory_pool/cpu/cpu_memory_pool.hpp"
+#include "memory_pool/gpu/gpu_memory_pool.hpp"
+#include "memory_pool/utils/error_handling.hpp"
 #include <stdexcept>
 
 namespace memory_pool {

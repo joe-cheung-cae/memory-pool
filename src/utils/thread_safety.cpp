@@ -1,4 +1,4 @@
-#include "../../include/memory_pool/utils/thread_safety.hpp"
+#include "memory_pool/utils/thread_safety.hpp"
 
 namespace memory_pool {
 
