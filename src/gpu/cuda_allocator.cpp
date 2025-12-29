@@ -96,7 +96,7 @@ void* CudaFixedSizeAllocator::allocate(size_t size, AllocFlags flags) {
 
     // Zero memory if requested
     if (has_flag(combinedFlags, AllocFlags::ZeroMemory)) {
-        cudaMemset(block->devicePtr, 0, blockSize);
+        cudaMemsetValue(block->devicePtr, 0, blockSize);
     }
 
     return block->devicePtr;
@@ -265,7 +265,7 @@ void* CudaVariableSizeAllocator::allocate(size_t size, AllocFlags flags) {
 
     // Zero memory if requested
     if (has_flag(combinedFlags, AllocFlags::ZeroMemory)) {
-        cudaMemset(block->devicePtr, 0, block->size);
+        cudaMemsetValue(block->devicePtr, 0, block->size);
     }
 
     return block->devicePtr;

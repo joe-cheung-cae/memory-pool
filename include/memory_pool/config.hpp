@@ -13,6 +13,12 @@ enum class AllocatorType {
     VariableSize
 };
 
+// Synchronization types
+enum class SyncType {
+    Mutex,      // Standard mutex-based synchronization
+    LockFree    // Lock-free synchronization for high-performance scenarios
+};
+
 // Configuration for memory pools
 struct PoolConfig {
     // General configuration
@@ -20,6 +26,7 @@ struct PoolConfig {
     size_t initialSize = 1024 * 1024;  // 1MB default
     size_t blockSize = 256;            // For fixed-size allocator
     bool threadSafe = true;
+    SyncType syncType = SyncType::Mutex;  // Synchronization method
     bool trackStats = true;
     bool enableDebugging = false;
     

@@ -75,3 +75,6 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Clangd cache file
+.cache

@@ -141,6 +141,21 @@ std::string MemoryStats::getStatsString() const {
     return oss.str();
 }
 
+void MemoryStats::setTrackingEnabled(bool enable) {
+    std::lock_guard<std::mutex> lock(trackingMutex);
+
+    if (enable && !trackingEnabled) {
+        // Clear existing allocations when enabling
+        activeAllocations.clear();
+    }
+
+    trackingEnabled = enable;
+}
+
+bool MemoryStats::isTrackingEnabled() const {
+    return trackingEnabled;
+}
+
 void MemoryStats::reset() {
     totalAllocated = 0;
     currentUsed = 0;

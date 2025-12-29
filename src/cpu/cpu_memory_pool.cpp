@@ -21,7 +21,8 @@ void CPUMemoryPool::initialize() {
         allocator = std::make_unique<FixedSizeAllocator>(
             config.blockSize,
             config.initialSize / config.blockSize,
-            config.alignment
+            config.alignment,
+            config.syncType == SyncType::LockFree
         );
     } else {
         allocator = std::make_unique<VariableSizeAllocator>(

@@ -2,9 +2,11 @@
 #define MEMORY_POOL_FIXED_SIZE_ALLOCATOR_HPP
 
 #include "cpu_memory_pool.hpp"
+#include "memory_pool/utils/thread_safety.hpp"
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#include <atomic>
 
 namespace memory_pool {
 
@@ -12,7 +14,7 @@ namespace memory_pool {
 class FixedSizeAllocator : public IAllocator {
 public:
     // Constructor and destructor
-    FixedSizeAllocator(size_t blockSize, size_t initialBlocks, size_t alignment = DEFAULT_ALIGNMENT);
+    FixedSizeAllocator(size_t blockSize, size_t initialBlocks, size_t alignment = DEFAULT_ALIGNMENT, bool lockFree = false);
     ~FixedSizeAllocator() override;
     
     // IAllocator interface implementation
@@ -46,14 +48,15 @@ private:
     size_t blockSize;
     size_t alignedBlockSize;
     size_t alignment;
-    
+    bool lockFree;
+
     // Memory management
-    Block* freeList;
+    std::atomic<Block*> freeList;
     std::vector<Chunk> chunks;
-    
+
     // Statistics
-    size_t totalBlocks;
-    size_t usedBlocks;
+    std::atomic<size_t> totalBlocks;
+    std::atomic<size_t> usedBlocks;
     
     // Helper methods
     void allocateChunk(size_t blockCount);

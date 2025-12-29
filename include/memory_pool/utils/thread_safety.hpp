@@ -5,6 +5,7 @@
 #include <shared_mutex>
 #include <atomic>
 #include <thread>
+#include <memory>
 
 namespace memory_pool {
 
@@ -138,6 +139,116 @@ private:
 
 template<typename T>
 thread_local T ThreadLocalStorage<T>::storage;
+
+// Lock-free queue for single-producer, single-consumer scenarios
+template<typename T>
+class LockFreeQueue {
+public:
+    LockFreeQueue() : head(new Node()), tail(head.load()) {}
+
+    ~LockFreeQueue() {
+        while (T* item = dequeue()) {
+            delete item;
+        }
+        Node* node = head.load();
+        while (node) {
+            Node* next = node->next.load();
+            delete node;
+            node = next;
+        }
+    }
+
+    void enqueue(T* item) {
+        Node* newNode = new Node(item);
+        Node* oldTail = tail.exchange(newNode);
+        oldTail->next.store(newNode);
+    }
+
+    T* dequeue() {
+        Node* oldHead = head.load();
+        Node* next = oldHead->next.load();
+        if (next == nullptr) {
+            return nullptr; // Queue is empty
+        }
+        T* item = next->data;
+        next->data = nullptr; // Mark as dequeued
+        head.store(next);
+        delete oldHead;
+        return item;
+    }
+
+    bool isEmpty() const {
+        Node* currentHead = head.load();
+        return currentHead->next.load() == nullptr;
+    }
+
+private:
+    struct Node {
+        T* data;
+        std::atomic<Node*> next;
+
+        Node(T* d = nullptr) : data(d), next(nullptr) {}
+    };
+
+    std::atomic<Node*> head;
+    std::atomic<Node*> tail;
+};
+
+// Lock-free stack using elimination backoff for better performance
+template<typename T>
+class LockFreeStack {
+public:
+    LockFreeStack() : top(nullptr), size(0) {}
+
+    ~LockFreeStack() {
+        while (T* item = pop()) {
+            delete item;
+        }
+    }
+
+    void push(T* item) {
+        Node* newNode = new Node(item);
+        newNode->next = top.load();
+        while (!top.compare_exchange_weak(newNode->next, newNode)) {
+            // Retry
+        }
+        size.fetch_add(1);
+    }
+
+    T* pop() {
+        Node* oldTop = top.load();
+        while (oldTop && !top.compare_exchange_weak(oldTop, oldTop->next.load())) {
+            // Retry
+        }
+        if (oldTop) {
+            size.fetch_sub(1);
+            T* item = oldTop->data;
+            oldTop->data = nullptr;
+            delete oldTop;
+            return item;
+        }
+        return nullptr;
+    }
+
+    bool isEmpty() const {
+        return top.load() == nullptr;
+    }
+
+    size_t getSize() const {
+        return size.load();
+    }
+
+private:
+    struct Node {
+        T* data;
+        std::atomic<Node*> next;
+
+        Node(T* d) : data(d), next(nullptr) {}
+    };
+
+    std::atomic<Node*> top;
+    std::atomic<size_t> size;
+};
 
 } // namespace memory_pool
 

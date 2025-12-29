@@ -155,11 +155,11 @@ void cudaDeallocate(void* ptr) {
     }
 }
 
-void cudaMemset(void* ptr, int value, size_t size) {
+void cudaMemsetValue(void* ptr, int value, size_t size) {
     if (ptr == nullptr || size == 0) {
         return;
     }
-    
+
     CUDA_CHECK(cudaMemset(ptr, value, size));
 }
 

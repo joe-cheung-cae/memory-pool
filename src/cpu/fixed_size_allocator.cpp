@@ -6,10 +6,11 @@
 
 namespace memory_pool {
 
-FixedSizeAllocator::FixedSizeAllocator(size_t blockSize, size_t initialBlocks, size_t alignment)
+FixedSizeAllocator::FixedSizeAllocator(size_t blockSize, size_t initialBlocks, size_t alignment, bool lockFree)
     : blockSize(blockSize),
       alignedBlockSize(align_size(std::max(blockSize, sizeof(Block)), alignment)),
       alignment(alignment),
+      lockFree(lockFree),
       freeList(nullptr),
       totalBlocks(0),
       usedBlocks(0) {
@@ -55,9 +56,18 @@ void* FixedSizeAllocator::allocate(size_t size) {
     }
     
     // Get a block from the free list
-    Block* block = freeList;
-    freeList = block->next;
-    
+    Block* block;
+    if (lockFree) {
+        // Lock-free allocation using atomic operations
+        do {
+            block = freeList.load();
+            if (block == nullptr) break;
+        } while (!freeList.compare_exchange_weak(block, block->next));
+    } else {
+        block = freeList;
+        freeList = block->next;
+    }
+
     // Update statistics
     usedBlocks++;
     
@@ -81,9 +91,18 @@ void FixedSizeAllocator::deallocate(void* ptr) {
     Block* block = static_cast<Block*>(ptr);
     
     // Add the block to the free list
-    block->next = freeList;
-    freeList = block;
-    
+    if (lockFree) {
+        // Lock-free deallocation using atomic operations
+        Block* oldHead;
+        do {
+            oldHead = freeList.load();
+            block->next = oldHead;
+        } while (!freeList.compare_exchange_weak(oldHead, block));
+    } else {
+        block->next = freeList;
+        freeList = block;
+    }
+
     // Update statistics
     usedBlocks--;
 }

@@ -6,12 +6,7 @@
 
 // Forward declarations for CUDA types to avoid requiring CUDA headers
 // in client code that doesn't need them
-#ifndef __CUDACC__
-typedef struct CUstream_st* cudaStream_t;
-typedef int cudaError_t;
-#else
 #include <cuda_runtime.h>
-#endif
 
 namespace memory_pool {
 
@@ -57,7 +52,7 @@ void synchronizeStream(cudaStream_t stream);
 // CUDA memory operations
 void* cudaAllocate(size_t size, AllocFlags flags = AllocFlags::None);
 void cudaDeallocate(void* ptr);
-void cudaMemset(void* ptr, int value, size_t size);
+void cudaMemsetValue(void* ptr, int value, size_t size);
 void cudaMemcpy(void* dst, const void* src, size_t size, bool hostToDevice);
 void cudaMemcpyAsync(void* dst, const void* src, size_t size, bool hostToDevice, cudaStream_t stream);
 

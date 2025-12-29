@@ -47,6 +47,10 @@ public:
     bool hasMemoryLeaks() const;
     std::string getStatsString() const;
     
+    // Enable/disable tracking
+    void setTrackingEnabled(bool enable);
+    bool isTrackingEnabled() const;
+
     // Reset statistics
     void reset();
 
