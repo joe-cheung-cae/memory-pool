@@ -178,8 +178,8 @@ void GPUMemoryPool::copyHostToDevice(void* dst, const void* src, size_t size) {
     // Ensure we're on the correct device
     ensureCorrectDevice();
 
-    // Copy the data
-    cudaMemcpyAsync(dst, src, size, true, stream);
+    // Copy the data asynchronously using the stream
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyHostToDevice, stream);
 
     // Synchronize to ensure the copy is complete
     synchronizeStream(stream);
@@ -193,8 +193,8 @@ void GPUMemoryPool::copyDeviceToHost(void* dst, const void* src, size_t size) {
     // Ensure we're on the correct device
     ensureCorrectDevice();
 
-    // Copy the data
-    cudaMemcpyAsync(dst, src, size, false, stream);
+    // Copy the data asynchronously using the stream
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToHost, stream);
 
     // Synchronize to ensure the copy is complete
     synchronizeStream(stream);
@@ -209,7 +209,7 @@ void GPUMemoryPool::copyDeviceToDevice(void* dst, const void* src, size_t size) 
     ensureCorrectDevice();
 
     // Copy the data (using our utility function)
-    cudaMemcpyAsync(dst, src, size, false, stream);
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToDevice, stream);
 
     // Synchronize to ensure the copy is complete
     synchronizeStream(stream);

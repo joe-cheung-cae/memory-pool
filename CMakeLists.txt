@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(memory_pool VERSION 0.1.0 LANGUAGES CXX CUDA)
 
+# Enable compile commands export
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,8 +15,8 @@ set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # Find CUDA package
-find_package(CUDA 11.0 REQUIRED)
-include_directories(${CUDA_INCLUDE_DIRS})
+find_package(CUDAToolkit REQUIRED)
+include_directories(${CUDAToolkit_INCLUDE_DIRS})
 
 # Options
 option(BUILD_EXAMPLES "Build example programs" ON)
@@ -52,7 +56,7 @@ set(SOURCES
 
 # Create the library
 add_library(memory_pool ${SOURCES})
-target_link_libraries(memory_pool ${CUDA_LIBRARIES})
+target_link_libraries(memory_pool CUDA::cudart)
 
 # Examples
 if(BUILD_EXAMPLES)
@@ -75,6 +79,10 @@ if(BUILD_TESTS)
     add_executable(gpu_tests tests/unit/gpu_tests.cpp)
     target_link_libraries(gpu_tests memory_pool)
     add_test(NAME gpu_tests COMMAND gpu_tests)
+
+    add_executable(manager_tests tests/unit/manager_tests.cpp)
+    target_link_libraries(manager_tests memory_pool)
+    add_test(NAME manager_tests COMMAND manager_tests)
 
     # Integration tests
     add_executable(cpu_gpu_integration_tests tests/integration/cpu_gpu_integration_tests.cpp)
