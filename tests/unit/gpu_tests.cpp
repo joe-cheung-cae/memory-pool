@@ -33,7 +33,7 @@ bool testCudaDeviceAvailable() {
 void testCudaFixedSizeAllocator() {
     std::cout << "Testing CudaFixedSizeAllocator..." << std::endl;
 
-    const size_t BLOCK_SIZE = 256;
+    const size_t BLOCK_SIZE     = 256;
     const size_t INITIAL_BLOCKS = 10;
 
     CudaFixedSizeAllocator allocator(BLOCK_SIZE, INITIAL_BLOCKS, 0);
@@ -158,9 +158,9 @@ void testGPUMemoryPool() {
     // Create GPU memory pool
     PoolConfig config;
     config.allocatorType = AllocatorType::FixedSize;
-    config.blockSize = 512;
-    config.initialSize = 1024 * 10; // 10KB
-    config.deviceId = 0;
+    config.blockSize     = 512;
+    config.initialSize   = 1024 * 10;  // 10KB
+    config.deviceId      = 0;
 
     GPUMemoryPool pool("test_gpu_pool", config);
 
@@ -211,8 +211,8 @@ void testGPUMemoryPoolVariableSize() {
     // Create GPU memory pool with variable size allocator
     PoolConfig config;
     config.allocatorType = AllocatorType::VariableSize;
-    config.initialSize = 1024 * 10; // 10KB
-    config.deviceId = 0;
+    config.initialSize   = 1024 * 10;  // 10KB
+    config.deviceId      = 0;
 
     GPUMemoryPool pool("test_gpu_var_pool", config);
 
@@ -227,7 +227,7 @@ void testGPUMemoryPoolVariableSize() {
 
     // Test statistics
     const MemoryStats& stats = pool.getStats();
-    if (stats.getCurrentUsed() < 600) { // At least 600 bytes used
+    if (stats.getCurrentUsed() < 600) {  // At least 600 bytes used
         throw std::runtime_error("Statistics not tracking variable allocations correctly");
     }
 
@@ -247,8 +247,8 @@ void testMemoryPoolManagerGPU() {
     // Create GPU pool
     PoolConfig config;
     config.allocatorType = AllocatorType::FixedSize;
-    config.blockSize = 256;
-    config.deviceId = 0;
+    config.blockSize     = 256;
+    config.deviceId      = 0;
 
     IMemoryPool* gpuPool = manager.createGPUPool("test_manager_gpu", config);
     if (gpuPool == nullptr) {

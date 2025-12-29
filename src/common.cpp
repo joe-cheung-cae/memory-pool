@@ -11,4 +11,4 @@ namespace memory_pool {
 // defined in the header file, so this file is relatively small.
 // As the library grows, more implementations can be added here.
 
-} // namespace memory_pool
+}  // namespace memory_pool

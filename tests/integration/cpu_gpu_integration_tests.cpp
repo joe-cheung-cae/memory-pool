@@ -35,15 +35,15 @@ void testBasicCpuGpuDataTransfer() {
     // Create CPU pool
     PoolConfig cpuConfig;
     cpuConfig.allocatorType = AllocatorType::FixedSize;
-    cpuConfig.blockSize = 1024;
-    IMemoryPool* cpuPool = manager.createCPUPool("cpu_transfer_pool", cpuConfig);
+    cpuConfig.blockSize     = 1024;
+    IMemoryPool* cpuPool    = manager.createCPUPool("cpu_transfer_pool", cpuConfig);
 
     // Create GPU pool
     PoolConfig gpuConfig;
     gpuConfig.allocatorType = AllocatorType::FixedSize;
-    gpuConfig.blockSize = 1024;
-    gpuConfig.deviceId = 0;
-    GPUMemoryPool* gpuPool = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_transfer_pool", gpuConfig));
+    gpuConfig.blockSize     = 1024;
+    gpuConfig.deviceId      = 0;
+    GPUMemoryPool* gpuPool  = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_transfer_pool", gpuConfig));
 
     // Allocate CPU memory
     void* hostData = cpuPool->allocate(512);
@@ -100,15 +100,15 @@ void testDeviceToDeviceTransfer() {
     // Create two GPU pools (could be on different devices if available)
     PoolConfig gpuConfig1;
     gpuConfig1.allocatorType = AllocatorType::FixedSize;
-    gpuConfig1.blockSize = 512;
-    gpuConfig1.deviceId = 0;
-    GPUMemoryPool* gpuPool1 = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_pool_1", gpuConfig1));
+    gpuConfig1.blockSize     = 512;
+    gpuConfig1.deviceId      = 0;
+    GPUMemoryPool* gpuPool1  = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_pool_1", gpuConfig1));
 
     PoolConfig gpuConfig2;
     gpuConfig2.allocatorType = AllocatorType::FixedSize;
-    gpuConfig2.blockSize = 512;
-    gpuConfig2.deviceId = 0; // Same device for now
-    GPUMemoryPool* gpuPool2 = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_pool_2", gpuConfig2));
+    gpuConfig2.blockSize     = 512;
+    gpuConfig2.deviceId      = 0;  // Same device for now
+    GPUMemoryPool* gpuPool2  = static_cast<GPUMemoryPool*>(manager.createGPUPool("gpu_pool_2", gpuConfig2));
 
     // Allocate memory on both devices
     void* deviceData1 = gpuPool1->allocate(256);
@@ -138,12 +138,12 @@ void testMemoryPoolManagerIntegration() {
     // Create CPU and GPU pools
     PoolConfig cpuConfig;
     cpuConfig.allocatorType = AllocatorType::VariableSize;
-    IMemoryPool* cpuPool = manager.createCPUPool("integration_cpu", cpuConfig);
+    IMemoryPool* cpuPool    = manager.createCPUPool("integration_cpu", cpuConfig);
 
     PoolConfig gpuConfig;
     gpuConfig.allocatorType = AllocatorType::VariableSize;
-    gpuConfig.deviceId = 0;
-    IMemoryPool* gpuPool = manager.createGPUPool("integration_gpu", gpuConfig);
+    gpuConfig.deviceId      = 0;
+    IMemoryPool* gpuPool    = manager.createGPUPool("integration_gpu", gpuConfig);
 
     // Test allocation from both pools
     void* cpuPtr = cpuPool->allocate(1024);
@@ -157,8 +157,7 @@ void testMemoryPoolManagerIntegration() {
 
     // Test statistics collection
     std::map<std::string, std::string> stats = manager.getAllStats();
-    if (stats.find("integration_cpu") == stats.end() ||
-        stats.find("integration_gpu") == stats.end()) {
+    if (stats.find("integration_cpu") == stats.end() || stats.find("integration_gpu") == stats.end()) {
         cpuPool->deallocate(cpuPtr);
         gpuPool->deallocate(gpuPtr);
         throw std::runtime_error("Pool statistics not found");
@@ -169,8 +168,7 @@ void testMemoryPoolManagerIntegration() {
     gpuPool->deallocate(gpuPtr);
 
     // Destroy pools
-    if (!manager.destroyPool("integration_cpu") ||
-        !manager.destroyPool("integration_gpu")) {
+    if (!manager.destroyPool("integration_cpu") || !manager.destroyPool("integration_gpu")) {
         throw std::runtime_error("Failed to destroy integrated pools");
     }
 
@@ -184,17 +182,17 @@ void testCrossPoolDataTransfer() {
 
     // Create CPU pool with pinned memory for efficient transfer
     PoolConfig cpuConfig;
-    cpuConfig.allocatorType = AllocatorType::FixedSize;
-    cpuConfig.blockSize = 1024;
+    cpuConfig.allocatorType   = AllocatorType::FixedSize;
+    cpuConfig.blockSize       = 1024;
     cpuConfig.usePinnedMemory = true;
-    IMemoryPool* cpuPool = manager.createCPUPool("pinned_cpu", cpuConfig);
+    IMemoryPool* cpuPool      = manager.createCPUPool("pinned_cpu", cpuConfig);
 
     // Create GPU pool
     PoolConfig gpuConfig;
     gpuConfig.allocatorType = AllocatorType::FixedSize;
-    gpuConfig.blockSize = 1024;
-    gpuConfig.deviceId = 0;
-    GPUMemoryPool* gpuPool = static_cast<GPUMemoryPool*>(manager.createGPUPool("transfer_gpu", gpuConfig));
+    gpuConfig.blockSize     = 1024;
+    gpuConfig.deviceId      = 0;
+    GPUMemoryPool* gpuPool  = static_cast<GPUMemoryPool*>(manager.createGPUPool("transfer_gpu", gpuConfig));
 
     // Allocate and initialize data
     void* hostData = cpuPool->allocate(512);

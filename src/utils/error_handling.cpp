@@ -9,10 +9,7 @@ ErrorHandler& ErrorHandler::getInstance() {
     return instance;
 }
 
-ErrorHandler::ErrorHandler()
-    : errorCallback(defaultErrorCallback),
-      throwExceptions(true) {
-}
+ErrorHandler::ErrorHandler() : errorCallback(defaultErrorCallback), throwExceptions(true) {}
 
 void ErrorHandler::setErrorCallback(ErrorCallback callback) {
     if (callback) {
@@ -26,7 +23,7 @@ void ErrorHandler::reportError(ErrorSeverity severity, const std::string& messag
     if (errorCallback) {
         errorCallback(severity, message);
     }
-    
+
     if (severity == ErrorSeverity::Fatal) {
         throwIfEnabled("Fatal error: " + message);
     }
@@ -36,7 +33,7 @@ bool ErrorHandler::check(bool condition, ErrorSeverity severity, const std::stri
     if (!condition) {
         reportError(severity, message);
     }
-    
+
     return condition;
 }
 
@@ -46,13 +43,9 @@ void ErrorHandler::throwIfEnabled(const std::string& message) {
     }
 }
 
-void ErrorHandler::setThrowExceptions(bool enable) {
-    throwExceptions = enable;
-}
+void ErrorHandler::setThrowExceptions(bool enable) { throwExceptions = enable; }
 
-bool ErrorHandler::isThrowingExceptions() const {
-    return throwExceptions;
-}
+bool ErrorHandler::isThrowingExceptions() const { return throwExceptions; }
 
 void ErrorHandler::defaultErrorCallback(ErrorSeverity severity, const std::string& message) {
     switch (severity) {
@@ -76,12 +69,8 @@ void reportError(ErrorSeverity severity, const std::string& message) {
     ErrorHandler::getInstance().reportError(severity, message);
 }
 
-void reportWarning(const std::string& message) {
-    reportError(ErrorSeverity::Warning, message);
-}
+void reportWarning(const std::string& message) { reportError(ErrorSeverity::Warning, message); }
 
-void reportInfo(const std::string& message) {
-    reportError(ErrorSeverity::Info, message);
-}
+void reportInfo(const std::string& message) { reportError(ErrorSeverity::Info, message); }
 
-} // namespace memory_pool
+}  // namespace memory_pool

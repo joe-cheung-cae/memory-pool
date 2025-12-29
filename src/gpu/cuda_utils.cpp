@@ -9,16 +9,13 @@
 namespace memory_pool {
 
 // CUDA error handling
-std::string CudaException::getCudaErrorString(cudaError_t error) {
-    return cudaGetErrorString(error);
-}
+std::string CudaException::getCudaErrorString(cudaError_t error) { return cudaGetErrorString(error); }
 
 void checkCudaError(cudaError_t error, const char* file, int line) {
     if (error != cudaSuccess) {
         std::ostringstream oss;
-        oss << "CUDA error at " << file << ":" << line << ": " 
-            << cudaGetErrorString(error) << " (" << error << ")";
-        
+        oss << "CUDA error at " << file << ":" << line << ": " << cudaGetErrorString(error) << " (" << error << ")";
+
         reportError(ErrorSeverity::Error, oss.str());
         throw CudaException(error);
     }
@@ -31,9 +28,7 @@ int getCurrentDevice() {
     return device;
 }
 
-void setCurrentDevice(int deviceId) {
-    CUDA_CHECK(cudaSetDevice(deviceId));
-}
+void setCurrentDevice(int deviceId) { CUDA_CHECK(cudaSetDevice(deviceId)); }
 
 int getDeviceCount() {
     int count;
@@ -52,7 +47,7 @@ bool isDeviceAvailable(int deviceId) {
     if (deviceId < 0 || deviceId >= count) {
         return false;
     }
-    
+
     // Try to set the device
     cudaError_t error = cudaSetDevice(deviceId);
     return (error == cudaSuccess);
@@ -84,9 +79,9 @@ void* cudaAllocate(size_t size, AllocFlags flags) {
     if (size == 0) {
         return nullptr;
     }
-    
+
     void* ptr = nullptr;
-    
+
     if (has_flag(flags, AllocFlags::Pinned)) {
         // Allocate pinned memory
         CUDA_CHECK(cudaMallocHost(&ptr, size));
@@ -97,12 +92,12 @@ void* cudaAllocate(size_t size, AllocFlags flags) {
         // Allocate device memory
         CUDA_CHECK(cudaMalloc(&ptr, size));
     }
-    
+
     // Zero memory if requested
     if (has_flag(flags, AllocFlags::ZeroMemory)) {
         CUDA_CHECK(cudaMemset(ptr, 0, size));
     }
-    
+
     return ptr;
 }
 
@@ -110,43 +105,41 @@ void cudaDeallocate(void* ptr) {
     if (ptr == nullptr) {
         return;
     }
-    
+
     // Determine if this is host or device memory
     cudaPointerAttributes attributes;
-    cudaError_t error = cudaPointerGetAttributes(&attributes, ptr);
-    
+    cudaError_t           error = cudaPointerGetAttributes(&attributes, ptr);
+
     if (error != cudaSuccess) {
         // Reset the error state
         cudaGetLastError();
-        
+
         // Try to free as device memory
         error = cudaFree(ptr);
         if (error != cudaSuccess) {
             // Reset the error state again
             cudaGetLastError();
-            
+
             // Try to free as host memory
             error = cudaFreeHost(ptr);
             if (error != cudaSuccess) {
                 // Reset the error state one more time
                 cudaGetLastError();
-                
-                reportError(ErrorSeverity::Warning, 
-                    "Failed to deallocate CUDA memory: " + std::string(cudaGetErrorString(error)));
+
+                reportError(ErrorSeverity::Warning,
+                            "Failed to deallocate CUDA memory: " + std::string(cudaGetErrorString(error)));
             }
         }
     } else {
         // Free based on memory type
 #if CUDART_VERSION >= 10000
-        if (attributes.type == cudaMemoryTypeHost || 
-            attributes.type == cudaMemoryTypeManaged) {
+        if (attributes.type == cudaMemoryTypeHost || attributes.type == cudaMemoryTypeManaged) {
             CUDA_CHECK(cudaFreeHost(ptr));
         } else {
             CUDA_CHECK(cudaFree(ptr));
         }
 #else
-        if (attributes.memoryType == cudaMemoryTypeHost || 
-            attributes.isManaged) {
+        if (attributes.memoryType == cudaMemoryTypeHost || attributes.isManaged) {
             CUDA_CHECK(cudaFreeHost(ptr));
         } else {
             CUDA_CHECK(cudaFree(ptr));
@@ -167,7 +160,7 @@ void cudaMemcpy(void* dst, const void* src, size_t size, bool hostToDevice) {
     if (dst == nullptr || src == nullptr || size == 0) {
         return;
     }
-    
+
     cudaMemcpyKind kind = hostToDevice ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToHost;
     CUDA_CHECK(cudaMemcpy(dst, src, size, kind));
 }
@@ -176,9 +169,9 @@ void cudaMemcpyAsync(void* dst, const void* src, size_t size, bool hostToDevice,
     if (dst == nullptr || src == nullptr || size == 0) {
         return;
     }
-    
+
     cudaMemcpyKind kind = hostToDevice ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToHost;
     CUDA_CHECK(cudaMemcpyAsync(dst, src, size, kind, stream));
 }
 
-} // namespace memory_pool
+}  // namespace memory_pool

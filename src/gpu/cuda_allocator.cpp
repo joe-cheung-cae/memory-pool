@@ -7,29 +7,19 @@
 namespace memory_pool {
 
 // CudaAllocatorBase implementation
-CudaAllocatorBase::CudaAllocatorBase(int deviceId)
-    : deviceId(deviceId), stream(nullptr) {
-}
+CudaAllocatorBase::CudaAllocatorBase(int deviceId) : deviceId(deviceId), stream(nullptr) {}
 
 CudaAllocatorBase::~CudaAllocatorBase() {
     // Stream is managed by the memory pool
 }
 
-void CudaAllocatorBase::setDevice(int deviceId) {
-    this->deviceId = deviceId;
-}
+void CudaAllocatorBase::setDevice(int deviceId) { this->deviceId = deviceId; }
 
-int CudaAllocatorBase::getDevice() const {
-    return deviceId;
-}
+int CudaAllocatorBase::getDevice() const { return deviceId; }
 
-void CudaAllocatorBase::setStream(cudaStream_t stream) {
-    this->stream = stream;
-}
+void CudaAllocatorBase::setStream(cudaStream_t stream) { this->stream = stream; }
 
-cudaStream_t CudaAllocatorBase::getStream() const {
-    return stream;
-}
+cudaStream_t CudaAllocatorBase::getStream() const { return stream; }
 
 void CudaAllocatorBase::ensureCorrectDevice() const {
     int currentDevice = getCurrentDevice();
@@ -39,9 +29,13 @@ void CudaAllocatorBase::ensureCorrectDevice() const {
 }
 
 // CudaFixedSizeAllocator implementation
-CudaFixedSizeAllocator::CudaFixedSizeAllocator(size_t blockSize, size_t initialBlocks, int deviceId, AllocFlags defaultFlags)
-    : CudaAllocatorBase(deviceId), blockSize(blockSize), defaultFlags(defaultFlags),
-      totalBlocks(initialBlocks), usedBlocks(0) {
+CudaFixedSizeAllocator::CudaFixedSizeAllocator(size_t blockSize, size_t initialBlocks, int deviceId,
+                                               AllocFlags defaultFlags)
+    : CudaAllocatorBase(deviceId),
+      blockSize(blockSize),
+      defaultFlags(defaultFlags),
+      totalBlocks(initialBlocks),
+      usedBlocks(0) {
     if (blockSize == 0) {
         throw InvalidOperationException("Block size cannot be zero");
     }
@@ -78,7 +72,7 @@ void* CudaFixedSizeAllocator::allocate(size_t size, AllocFlags flags) {
     // Find a free block
     if (freeBlocks.empty()) {
         // Allocate a new chunk
-        allocateChunk(std::max(size_t(16), totalBlocks / 4)); // Grow by at least 16 blocks or 25%
+        allocateChunk(std::max(size_t(16), totalBlocks / 4));  // Grow by at least 16 blocks or 25%
     }
 
     if (freeBlocks.empty()) {
@@ -114,7 +108,7 @@ void CudaFixedSizeAllocator::deallocate(void* ptr) {
         throw InvalidPointerException("Pointer not allocated by this allocator");
     }
 
-    Block* block = it->second;
+    Block* block  = it->second;
     block->isFree = true;
     allocatedBlocks.erase(it);
     freeBlocks.push_back(block);
@@ -163,21 +157,13 @@ bool CudaFixedSizeAllocator::owns(void* ptr) const {
     return false;
 }
 
-size_t CudaFixedSizeAllocator::getBlockSize() const {
-    return blockSize;
-}
+size_t CudaFixedSizeAllocator::getBlockSize() const { return blockSize; }
 
-size_t CudaFixedSizeAllocator::getCapacity() const {
-    return totalBlocks;
-}
+size_t CudaFixedSizeAllocator::getCapacity() const { return totalBlocks; }
 
-size_t CudaFixedSizeAllocator::getFreeBlocks() const {
-    return freeBlocks.size();
-}
+size_t CudaFixedSizeAllocator::getFreeBlocks() const { return freeBlocks.size(); }
 
-size_t CudaFixedSizeAllocator::getUsedBlocks() const {
-    return usedBlocks;
-}
+size_t CudaFixedSizeAllocator::getUsedBlocks() const { return usedBlocks; }
 
 void CudaFixedSizeAllocator::allocateChunk(size_t blockCount) {
     size_t chunkSize = blockCount * blockSize;
@@ -204,9 +190,9 @@ void CudaFixedSizeAllocator::allocateChunk(size_t blockCount) {
 }
 
 bool CudaFixedSizeAllocator::isPointerInChunk(const void* ptr, const Chunk& chunk) const {
-    const char* ptrChar = static_cast<const char*>(ptr);
+    const char* ptrChar    = static_cast<const char*>(ptr);
     const char* chunkStart = static_cast<const char*>(chunk.deviceMemory);
-    const char* chunkEnd = chunkStart + (chunk.blockCount * blockSize);
+    const char* chunkEnd   = chunkStart + (chunk.blockCount * blockSize);
 
     return (ptrChar >= chunkStart && ptrChar < chunkEnd);
 }
@@ -246,7 +232,7 @@ void* CudaVariableSizeAllocator::allocate(size_t size, AllocFlags flags) {
     Block* block = findBestFit(size);
     if (block == nullptr) {
         // Allocate new region
-        size_t regionSize = std::max(size * 2, totalSize / 2); // Double the requested size or half of total size
+        size_t regionSize = std::max(size * 2, totalSize / 2);  // Double the requested size or half of total size
         addRegion(regionSize);
 
         block = findBestFit(size);
@@ -259,7 +245,7 @@ void* CudaVariableSizeAllocator::allocate(size_t size, AllocFlags flags) {
     splitBlock(block, size);
 
     // Mark as allocated
-    block->isFree = false;
+    block->isFree                     = false;
     allocatedBlocks[block->devicePtr] = block;
     usedSize += block->size;
 
@@ -341,17 +327,11 @@ bool CudaVariableSizeAllocator::owns(void* ptr) const {
     return false;
 }
 
-size_t CudaVariableSizeAllocator::getTotalSize() const {
-    return totalSize;
-}
+size_t CudaVariableSizeAllocator::getTotalSize() const { return totalSize; }
 
-size_t CudaVariableSizeAllocator::getUsedSize() const {
-    return usedSize;
-}
+size_t CudaVariableSizeAllocator::getUsedSize() const { return usedSize; }
 
-size_t CudaVariableSizeAllocator::getFreeSize() const {
-    return totalSize - usedSize;
-}
+size_t CudaVariableSizeAllocator::getFreeSize() const { return totalSize - usedSize; }
 
 void CudaVariableSizeAllocator::addRegion(size_t size) {
     // Allocate device memory
@@ -372,9 +352,7 @@ void CudaVariableSizeAllocator::addRegion(size_t size) {
     totalSize += size;
 }
 
-void CudaVariableSizeAllocator::addToFreeList(Block* block) {
-    freeBlocks.emplace(block->size, block);
-}
+void CudaVariableSizeAllocator::addToFreeList(Block* block) { freeBlocks.emplace(block->size, block); }
 
 void CudaVariableSizeAllocator::removeFromFreeList(Block* block) {
     auto it = freeBlocks.find(block->size);
@@ -392,12 +370,12 @@ void CudaVariableSizeAllocator::removeFromFreeList(Block* block) {
 
 CudaVariableSizeAllocator::Block* CudaVariableSizeAllocator::findBestFit(size_t size) {
     // Find the smallest block that can fit the requested size
-    Block* bestFit = nullptr;
+    Block* bestFit     = nullptr;
     size_t bestFitSize = std::numeric_limits<size_t>::max();
 
     auto it = freeBlocks.lower_bound(size);
     if (it != freeBlocks.end()) {
-        bestFit = it->second;
+        bestFit     = it->second;
         bestFitSize = it->first;
     }
 
@@ -440,11 +418,11 @@ void CudaVariableSizeAllocator::mergeAdjacentBlocks() {
 }
 
 bool CudaVariableSizeAllocator::isPointerInRegion(const void* ptr, const MemoryRegion& region) const {
-    const char* ptrChar = static_cast<const char*>(ptr);
+    const char* ptrChar     = static_cast<const char*>(ptr);
     const char* regionStart = static_cast<const char*>(region.deviceMemory);
-    const char* regionEnd = regionStart + region.size;
+    const char* regionEnd   = regionStart + region.size;
 
     return (ptrChar >= regionStart && ptrChar < regionEnd);
 }
 
-} // namespace memory_pool
+}  // namespace memory_pool

@@ -10,4 +10,4 @@ namespace memory_pool {
 // relatively small. As the library grows, more implementations
 // can be added here.
 
-} // namespace memory_pool
+}  // namespace memory_pool
