@@ -6,6 +6,7 @@
 
 namespace memory_pool {
 
+// Constructor
 CPUMemoryPool::CPUMemoryPool(const std::string& name, const PoolConfig& config)
     : name(name), config(config), allocator(nullptr) {
     initialize();
@@ -65,6 +66,7 @@ void* CPUMemoryPool::allocateInternal(size_t size, AllocFlags flags) {
     return ptr;
 }
 
+// Deallocate memory
 void CPUMemoryPool::deallocate(void* ptr) {
     if (ptr == nullptr) {
         return;
@@ -101,6 +103,7 @@ void CPUMemoryPool::deallocate(void* ptr) {
     }
 }
 
+// Reset the memory pool
 void CPUMemoryPool::reset() {
     if (config.threadSafe) {
         std::lock_guard<std::mutex> lock(mutex);

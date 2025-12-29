@@ -9,11 +9,24 @@
 
 namespace memory_pool {
 
-// Variable-size allocator
+/**
+ * @brief Variable-size allocator.
+ *
+ * This allocator manages memory in variable-size blocks, providing
+ * efficient allocation and deallocation for objects of different sizes.
+ */
 class VariableSizeAllocator : public IAllocator {
   public:
-    // Constructor and destructor
+    /**
+     * @brief Constructs a variable-size allocator.
+     * @param initialSize The initial size of the memory pool.
+     * @param alignment Memory alignment requirement.
+     */
     VariableSizeAllocator(size_t initialSize, size_t alignment = DEFAULT_ALIGNMENT);
+
+    /**
+     * @brief Destroys the variable-size allocator.
+     */
     ~VariableSizeAllocator() override;
 
     // IAllocator interface implementation
@@ -24,10 +37,34 @@ class VariableSizeAllocator : public IAllocator {
     bool   owns(void* ptr) const override;
 
     // Variable-size allocator specific methods
+    /**
+     * @brief Gets the total size of the allocator.
+     * @return The total size in bytes.
+     */
     size_t getTotalSize() const;
+
+    /**
+     * @brief Gets the used size of the allocator.
+     * @return The used size in bytes.
+     */
     size_t getUsedSize() const;
+
+    /**
+     * @brief Gets the free size of the allocator.
+     * @return The free size in bytes.
+     */
     size_t getFreeSize() const;
+
+    /**
+     * @brief Gets the size of the largest free block.
+     * @return The largest free block size in bytes.
+     */
     size_t getLargestFreeBlock() const;
+
+    /**
+     * @brief Gets the fragmentation ratio.
+     * @return The fragmentation ratio (0.0 to 1.0).
+     */
     double getFragmentationRatio() const;
 
   private:
