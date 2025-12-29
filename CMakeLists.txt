@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(memory_pool VERSION 0.1.0 LANGUAGES CXX CUDA)
+project(memory_pool VERSION 1.0.0 LANGUAGES CXX CUDA)
 
 # Enable compile commands export
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -100,6 +100,45 @@ if(BUILD_PERFORMANCE_TESTS)
 
     add_executable(comparison_benchmarks tests/performance/comparison_benchmarks.cpp)
     target_link_libraries(comparison_benchmarks memory_pool)
+endif()
+
+# Doxygen documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    # Set Doxygen input and output directories
+    set(DOXYGEN_INPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
+
+    # Create Doxygen configuration file
+    doxygen_add_docs(doxygen
+        ${DOXYGEN_INPUT_DIR}
+        README.md
+        COMMENT "Generate HTML documentation"
+    )
+
+    # Configure Doxygen
+    set(DOXYGEN_PROJECT_NAME "Memory Pool Management System")
+    set(DOXYGEN_PROJECT_VERSION ${PROJECT_VERSION})
+    set(DOXYGEN_PROJECT_BRIEF "High-performance memory pool management for CPU and GPU")
+    set(DOXYGEN_OUTPUT_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+    set(DOXYGEN_HTML_OUTPUT html)
+    set(DOXYGEN_GENERATE_HTML YES)
+    set(DOXYGEN_GENERATE_LATEX NO)
+    set(DOXYGEN_RECURSIVE YES)
+    set(DOXYGEN_EXTRACT_ALL YES)
+    set(DOXYGEN_EXTRACT_PRIVATE NO)
+    set(DOXYGEN_EXTRACT_STATIC NO)
+    set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+    set(DOXYGEN_WARN_IF_DOC_ERROR YES)
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+
+    # Custom target to generate docs
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
 endif()
 
 # Installation

@@ -14,11 +14,22 @@ namespace memory_pool {
 // Forward declarations
 class ICudaAllocator;
 
-// GPU Memory Pool implementation
+/**
+ * @brief GPU memory pool implementation using CUDA.
+ *
+ * This class provides memory management for GPU devices, implementing the IMemoryPool
+ * interface with CUDA-specific optimizations and features.
+ */
 class GPUMemoryPool : public IMemoryPool {
   public:
-    // Constructor and destructor
+    /**
+     * @brief Constructor for GPU memory pool.
+     * @param name The name of the memory pool.
+     * @param config Configuration parameters for the pool.
+     */
     GPUMemoryPool(const std::string& name, const PoolConfig& config);
+
+    /** @brief Destructor */
     ~GPUMemoryPool() override;
 
     // IMemoryPool interface implementation
@@ -31,15 +42,46 @@ class GPUMemoryPool : public IMemoryPool {
     std::string        getName() const override;
     const PoolConfig&  getConfig() const override;
 
-    // GPU-specific methods
-    void         setDevice(int deviceId);
-    int          getDevice() const;
-    void         setStream(cudaStream_t stream);
+    /**
+     * @brief Sets the CUDA device for this pool.
+     * @param deviceId The CUDA device ID.
+     */
+    void setDevice(int deviceId);
+
+    /** @brief Gets the current CUDA device ID. */
+    int getDevice() const;
+
+    /**
+     * @brief Sets the CUDA stream for asynchronous operations.
+     * @param stream The CUDA stream to use.
+     */
+    void setStream(cudaStream_t stream);
+
+    /** @brief Gets the current CUDA stream. */
     cudaStream_t getStream() const;
 
-    // Memory transfer helpers
+    /**
+     * @brief Copies data from host memory to device memory.
+     * @param dst Destination device pointer.
+     * @param src Source host pointer.
+     * @param size Number of bytes to copy.
+     */
     void copyHostToDevice(void* dst, const void* src, size_t size);
+
+    /**
+     * @brief Copies data from device memory to host memory.
+     * @param dst Destination host pointer.
+     * @param src Source device pointer.
+     * @param size Number of bytes to copy.
+     */
     void copyDeviceToHost(void* dst, const void* src, size_t size);
+
+    /**
+     * @brief Copies data from device memory to device memory.
+     * @param dst Destination device pointer.
+     * @param src Source device pointer.
+     * @param size Number of bytes to copy.
+     */
     void copyDeviceToDevice(void* dst, const void* src, size_t size);
 
   private:
@@ -66,22 +108,65 @@ class GPUMemoryPool : public IMemoryPool {
     void  ensureCorrectDevice() const;
 };
 
-// CUDA Allocator interface
+/**
+ * @brief Interface for CUDA memory allocators.
+ *
+ * This abstract interface defines the contract for CUDA memory allocators,
+ * providing both standard allocation methods and CUDA-specific functionality.
+ */
 class ICudaAllocator {
   public:
     virtual ~ICudaAllocator() = default;
 
-    virtual void*  allocate(size_t size, AllocFlags flags) = 0;
-    virtual void   deallocate(void* ptr)                   = 0;
-    virtual void   reset()                                 = 0;
-    virtual size_t getBlockSize(void* ptr) const           = 0;
-    virtual bool   owns(void* ptr) const                   = 0;
+    /**
+     * @brief Allocates CUDA memory with specified flags.
+     * @param size Size of memory to allocate in bytes.
+     * @param flags Allocation flags (e.g., pinned memory).
+     * @return Pointer to allocated memory, or nullptr on failure.
+     */
+    virtual void* allocate(size_t size, AllocFlags flags) = 0;
+
+    /**
+     * @brief Deallocates previously allocated CUDA memory.
+     * @param ptr Pointer to memory to deallocate.
+     */
+    virtual void deallocate(void* ptr) = 0;
+
+    /** @brief Resets the allocator, deallocating all memory. */
+    virtual void reset() = 0;
+
+    /**
+     * @brief Gets the block size for a given allocation.
+     * @param ptr Pointer to the allocated memory.
+     * @return Size of the memory block.
+     */
+    virtual size_t getBlockSize(void* ptr) const = 0;
+
+    /**
+     * @brief Checks if the allocator owns a given pointer.
+     * @param ptr Pointer to check.
+     * @return True if the allocator owns this pointer.
+     */
+    virtual bool owns(void* ptr) const = 0;
 
     // CUDA-specific methods
-    virtual void         setDevice(int deviceId)        = 0;
-    virtual int          getDevice() const              = 0;
-    virtual void         setStream(cudaStream_t stream) = 0;
-    virtual cudaStream_t getStream() const              = 0;
+    /**
+     * @brief Sets the CUDA device for this allocator.
+     * @param deviceId The CUDA device ID.
+     */
+    virtual void setDevice(int deviceId) = 0;
+
+    /** @brief Gets the current CUDA device ID. */
+    virtual int getDevice() const = 0;
+
+    /**
+     * @brief Sets the CUDA stream for asynchronous operations.
+     * @param stream The CUDA stream to use.
+     */
+    virtual void setStream(cudaStream_t stream) = 0;
+
+    /** @brief Gets the current CUDA stream. */
+    virtual cudaStream_t getStream() const = 0;
 };
 
 }  // namespace memory_pool
