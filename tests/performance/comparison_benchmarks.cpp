@@ -18,7 +18,7 @@ using namespace memory_pool;
 // Benchmark configuration
 const int NUM_ITERATIONS = 1000;
 const int WARMUP_ITERATIONS = 100;
-const size_t TEST_SIZES[] = {16, 64, 256, 1024, 4096};
+const size_t TEST_SIZES[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 10240, 32768, 65536, 102400, 131072};
 const int NUM_TEST_SIZES = sizeof(TEST_SIZES) / sizeof(TEST_SIZES[0]);
 
 // Helper function to check CUDA availability
@@ -146,8 +146,7 @@ std::vector<BenchmarkResult> benchmarkGPUAllocators() {
         result.name = "GPU Memory Pool";
 
         PoolConfig config;
-        config.allocatorType = AllocatorType::FixedSize;
-        config.blockSize = 4096;  // Large enough for all test sizes
+        config.allocatorType = AllocatorType::VariableSize;
         config.deviceId = 0;
         GPUMemoryPool pool("gpu_compare_pool", config);
 
@@ -198,8 +197,7 @@ std::vector<BenchmarkResult> benchmarkDataTransfer() {
     CPUMemoryPool cpuPool("cpu_transfer_pool", cpuConfig);
 
     PoolConfig gpuConfig;
-    gpuConfig.allocatorType = AllocatorType::FixedSize;
-    gpuConfig.blockSize = 4096;
+    gpuConfig.allocatorType = AllocatorType::VariableSize;
     gpuConfig.deviceId = 0;
     GPUMemoryPool gpuPool("gpu_transfer_pool", gpuConfig);
 
@@ -255,9 +253,23 @@ std::vector<BenchmarkResult> benchmarkDataTransfer() {
 // Print comparison table
 void printComparisonTable(const std::vector<BenchmarkResult>& results) {
     std::cout << "\n=== Performance Comparison Table ===" << std::endl;
-    std::cout << std::setw(20) << "Allocator" << std::setw(10) << "16B" << std::setw(10) << "64B"
-              << std::setw(10) << "256B" << std::setw(10) << "1KB" << std::setw(10) << "4KB" << std::endl;
-    std::cout << std::string(70, '-') << std::endl;
+
+    // Build header
+    std::cout << std::setw(20) << "Allocator";
+    for (size_t size : TEST_SIZES) {
+        std::string label;
+        if (size < 1024) {
+            label = std::to_string(size) + "B";
+        } else {
+            label = std::to_string(size / 1024) + "KB";
+        }
+        std::cout << std::setw(10) << label;
+    }
+    std::cout << std::endl;
+
+    // Separator line
+    size_t tableWidth = 20 + 10 * NUM_TEST_SIZES;
+    std::cout << std::string(tableWidth, '-') << std::endl;
 
     for (const auto& result : results) {
         std::cout << std::setw(20) << result.name;
