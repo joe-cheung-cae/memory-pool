@@ -6,15 +6,15 @@
 ## Optimization and Enhancement Tasks
 
 ### Code Quality Improvements
-- [ ] Implement advanced memory defragmentation for GPU variable-size allocator
+- [x] Implement advanced memory defragmentation for GPU variable-size allocator
   - **Rationale**: Current mergeAdjacentBlocks() is simplified and may lead to fragmentation
   - **Impact**: Better memory utilization, reduced allocation failures
   - **Steps**: Implement proper block coalescing algorithm, add fragmentation metrics
-- [ ] Add comprehensive memory leak detection integration
+- [x] Add comprehensive memory leak detection integration
   - **Rationale**: While RAII is used, dedicated leak detection tools would help in debugging
   - **Impact**: Easier debugging for users, better reliability
   - **Steps**: Integrate with Valgrind, add custom leak detection in debug builds
-- [ ] Code cleanup: Remove any unused includes and optimize header dependencies
+- [x] Code cleanup: Remove any unused includes and optimize header dependencies
   - **Rationale**: Reduce compilation time and binary size
   - **Impact**: Faster builds, smaller binaries
   - **Steps**: Analyze include dependencies, remove unused headers

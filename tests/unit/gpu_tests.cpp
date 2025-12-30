@@ -2,6 +2,7 @@
 #include "memory_pool/gpu/gpu_memory_pool.hpp"
 #include "memory_pool/gpu/cuda_allocator.hpp"
 #include "memory_pool/gpu/cuda_utils.hpp"
+#include "memory_pool/utils/debug_tools.hpp"
 #include "memory_pool/common.hpp"
 #include <iostream>
 #include <vector>
@@ -152,6 +153,50 @@ void testCudaVariableSizeAllocator() {
     std::cout << "CudaVariableSizeAllocator tests passed!" << std::endl;
 }
 
+void testCudaVariableSizeAllocatorFragmentation() {
+    std::cout << "Testing CudaVariableSizeAllocator fragmentation..." << std::endl;
+
+    const size_t INITIAL_SIZE = 2048;
+
+    CudaVariableSizeAllocator allocator(INITIAL_SIZE, 0);
+
+    // Allocate several blocks
+    void* ptr1 = allocator.allocate(256, AllocFlags::None);
+    void* ptr2 = allocator.allocate(256, AllocFlags::None);
+    void* ptr3 = allocator.allocate(256, AllocFlags::None);
+
+    // Deallocate middle block to create fragmentation
+    allocator.deallocate(ptr2);
+
+    // Fragmentation should be > 0 since we have free blocks
+    double frag = allocator.getFragmentationRatio();
+    if (frag < 0.0 || frag > 1.0) {
+        throw std::runtime_error("Fragmentation ratio out of range");
+    }
+
+    // Allocate again - should reuse the free block
+    void* ptr4 = allocator.allocate(256, AllocFlags::None);
+    if (ptr4 == nullptr) {
+        throw std::runtime_error("Failed to allocate in fragmented memory");
+    }
+
+    // Deallocate adjacent blocks to test merging
+    allocator.deallocate(ptr1);
+    allocator.deallocate(ptr3);
+
+    // Fragmentation should decrease after merging
+    double fragAfter = allocator.getFragmentationRatio();
+    if (fragAfter < 0.0 || fragAfter > 1.0) {
+        throw std::runtime_error("Fragmentation ratio after merging out of range");
+    }
+
+    // Clean up
+    allocator.deallocate(ptr4);
+    allocator.reset();
+
+    std::cout << "CudaVariableSizeAllocator fragmentation tests passed!" << std::endl;
+}
+
 void testGPUMemoryPool() {
     std::cout << "Testing GPUMemoryPool..." << std::endl;
 
@@ -239,6 +284,58 @@ void testGPUMemoryPoolVariableSize() {
     std::cout << "GPUMemoryPool variable size tests passed!" << std::endl;
 }
 
+void testGPUMemoryLeakDetection() {
+    std::cout << "Testing GPU memory leak detection..." << std::endl;
+
+    // Create GPU memory pool with debugging enabled
+    PoolConfig config;
+    config.allocatorType = AllocatorType::VariableSize;
+    config.initialSize   = 1024 * 5;  // 5KB
+    config.deviceId      = 0;
+    config.enableDebugging = true;
+
+    GPUMemoryPool pool("test_leak_pool", config);
+
+    // Enable global debugging
+    enableDebugging(true);
+
+    // Allocate some memory
+    void* ptr1 = pool.allocate(128);
+    void* ptr2 = pool.allocate(256);
+
+    if (ptr1 == nullptr || ptr2 == nullptr) {
+        throw std::runtime_error("Failed to allocate for leak test");
+    }
+
+    // Check that leak detector is tracking
+    auto& leakDetector = MemoryLeakDetector::getInstance();
+    if (!leakDetector.isEnabled()) {
+        throw std::runtime_error("Leak detector should be enabled");
+    }
+
+    // Deallocate one pointer
+    pool.deallocate(ptr1);
+
+    // Check that we have one leak (ptr2 not deallocated)
+    if (leakDetector.hasLeaks()) {
+        std::string report = leakDetector.getLeakReport();
+        if (report.find("test_leak_pool") == std::string::npos) {
+            throw std::runtime_error("Leak report should contain pool name");
+        }
+    } else {
+        throw std::runtime_error("Should detect memory leak");
+    }
+
+    // Deallocate the remaining pointer
+    pool.deallocate(ptr2);
+
+    // Reset leak detector for clean state
+    leakDetector.reset();
+    enableDebugging(false);
+
+    std::cout << "GPU memory leak detection tests passed!" << std::endl;
+}
+
 void testMemoryPoolManagerGPU() {
     std::cout << "Testing MemoryPoolManager GPU functionality..." << std::endl;
 
@@ -296,8 +393,10 @@ int main() {
         // Run tests
         testCudaFixedSizeAllocator();
         testCudaVariableSizeAllocator();
+        testCudaVariableSizeAllocatorFragmentation();
         testGPUMemoryPool();
         testGPUMemoryPoolVariableSize();
+        testGPUMemoryLeakDetection();
         testMemoryPoolManagerGPU();
 
         std::cout << "All GPU unit tests passed!" << std::endl;

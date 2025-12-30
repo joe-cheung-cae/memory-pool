@@ -14,7 +14,7 @@ namespace memory_pool {
 class CudaAllocatorBase : public ICudaAllocator {
   public:
     // Constructor and destructor
-    CudaAllocatorBase(int deviceId);
+    explicit CudaAllocatorBase(int deviceId);
     ~CudaAllocatorBase() override;
 
     // ICudaAllocator interface implementation for device management
@@ -59,7 +59,7 @@ class CudaFixedSizeAllocator : public CudaAllocatorBase {
         void* devicePtr;
         bool  isFree;
 
-        Block(void* ptr) : devicePtr(ptr), isFree(true) {}
+        explicit Block(void* ptr) : devicePtr(ptr), isFree(true) {}
     };
 
     // Chunk structure (contains multiple blocks)
@@ -107,6 +107,7 @@ class CudaVariableSizeAllocator : public CudaAllocatorBase {
     size_t getTotalSize() const;
     size_t getUsedSize() const;
     size_t getFreeSize() const;
+    double getFragmentationRatio() const;
 
   private:
     // Block structure (stored in host memory)
@@ -146,7 +147,7 @@ class CudaVariableSizeAllocator : public CudaAllocatorBase {
     Block* findBestFit(size_t size);
     void   splitBlock(Block* block, size_t size);
     void   mergeAdjacentBlocks();
-    bool   isPointerInRegion(const void* ptr, const MemoryRegion& region) const;
+    static bool isPointerInRegion(const void* ptr, const MemoryRegion& region);
 };
 
 }  // namespace memory_pool

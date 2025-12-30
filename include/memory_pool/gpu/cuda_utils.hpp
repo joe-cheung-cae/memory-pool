@@ -8,6 +8,12 @@
 // in client code that doesn't need them
 #include <cuda_runtime.h>
 
+// Valgrind integration for memory leak detection
+#ifdef HAVE_VALGRIND
+#include <valgrind/valgrind.h>
+#include <valgrind/memcheck.h>
+#endif
+
 namespace memory_pool {
 
 /**

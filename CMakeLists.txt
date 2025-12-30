@@ -24,6 +24,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(CUDAToolkit REQUIRED)
 include_directories(${CUDAToolkit_INCLUDE_DIRS})
 
+# Find Valgrind (required)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(VALGRIND REQUIRED valgrind)
+add_definitions(-DHAVE_VALGRIND)
+include_directories(${VALGRIND_INCLUDE_DIRS})
+link_directories(${VALGRIND_LIBRARY_DIRS})
+
 # Options
 option(BUILD_EXAMPLES "Build example programs" ON)
 option(BUILD_TESTS "Build test programs" OFF)

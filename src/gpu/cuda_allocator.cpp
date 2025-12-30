@@ -2,16 +2,13 @@
 #include "memory_pool/gpu/cuda_utils.hpp"
 #include "memory_pool/utils/error_handling.hpp"
 #include <algorithm>
-#include <limits>
 
 namespace memory_pool {
 
 // CudaAllocatorBase implementation
 CudaAllocatorBase::CudaAllocatorBase(int deviceId) : deviceId(deviceId), stream(nullptr) {}
 
-CudaAllocatorBase::~CudaAllocatorBase() {
-    // Stream is managed by the memory pool
-}
+CudaAllocatorBase::~CudaAllocatorBase() = default;
 
 void CudaAllocatorBase::setDevice(int deviceId) { this->deviceId = deviceId; }
 
@@ -72,7 +69,7 @@ void* CudaFixedSizeAllocator::allocate(size_t size, AllocFlags flags) {
     // Find a free block
     if (freeBlocks.empty()) {
         // Allocate a new chunk
-        allocateChunk(std::max(size_t(16), totalBlocks / 4));  // Grow by at least 16 blocks or 25%
+        allocateChunk(std::max(static_cast<size_t>(16), totalBlocks / 4));  // Grow by at least 16 blocks or 25%
     }
 
     if (freeBlocks.empty()) {
@@ -333,6 +330,23 @@ size_t CudaVariableSizeAllocator::getUsedSize() const { return usedSize; }
 
 size_t CudaVariableSizeAllocator::getFreeSize() const { return totalSize - usedSize; }
 
+double CudaVariableSizeAllocator::getFragmentationRatio() const {
+    size_t freeSize = getFreeSize();
+    if (freeSize == 0) {
+        return 0.0;
+    }
+
+    // Find the size of the largest free block
+    size_t largestFreeBlock = 0;
+    for (const auto& pair : freeBlocks) {
+        largestFreeBlock = std::max(largestFreeBlock, pair.first);
+    }
+
+    // Fragmentation ratio: (total free - largest free block) / total free
+    // Higher values indicate more fragmentation
+    return static_cast<double>(freeSize - largestFreeBlock) / freeSize;
+}
+
 void CudaVariableSizeAllocator::addRegion(size_t size) {
     // Allocate device memory
     void* deviceMemory = cudaAllocate(size, defaultFlags);
@@ -370,16 +384,12 @@ void CudaVariableSizeAllocator::removeFromFreeList(Block* block) {
 
 CudaVariableSizeAllocator::Block* CudaVariableSizeAllocator::findBestFit(size_t size) {
     // Find the smallest block that can fit the requested size
-    Block* bestFit     = nullptr;
-    size_t bestFitSize = std::numeric_limits<size_t>::max();
-
     auto it = freeBlocks.lower_bound(size);
     if (it != freeBlocks.end()) {
-        bestFit     = it->second;
-        bestFitSize = it->first;
+        return it->second;
     }
 
-    return bestFit;
+    return nullptr;
 }
 
 void CudaVariableSizeAllocator::splitBlock(Block* block, size_t size) {
@@ -412,12 +422,35 @@ void CudaVariableSizeAllocator::splitBlock(Block* block, size_t size) {
 }
 
 void CudaVariableSizeAllocator::mergeAdjacentBlocks() {
-    // This is a simplified implementation - in a real-world scenario,
-    // you'd want more sophisticated merging logic
-    // For now, we'll skip complex merging to keep the implementation simpler
+    for (auto& region : regions) {
+        // Sort blocks by devicePtr to ensure they are in address order
+        std::sort(region.blocks.begin(), region.blocks.end(), [](const Block& a, const Block& b) {
+            return a.devicePtr < b.devicePtr;
+        });
+
+        // Iterate through blocks and merge adjacent free blocks
+        for (auto it = region.blocks.begin(); it != region.blocks.end(); ) {
+            auto next = std::next(it);
+            if (next != region.blocks.end() && it->isFree && next->isFree &&
+                static_cast<char*>(it->devicePtr) + it->size == next->devicePtr) {
+                // Merge the blocks
+                it->size += next->size;
+
+                // Remove the merged block from freeBlocks
+                removeFromFreeList(&(*next));
+
+                // Erase the merged block from the region's block list
+                region.blocks.erase(next);
+
+                // Don't increment it, continue checking with the updated block
+            } else {
+                ++it;
+            }
+        }
+    }
 }
 
-bool CudaVariableSizeAllocator::isPointerInRegion(const void* ptr, const MemoryRegion& region) const {
+bool CudaVariableSizeAllocator::isPointerInRegion(const void* ptr, const MemoryRegion& region) {
     const char* ptrChar     = static_cast<const char*>(ptr);
     const char* regionStart = static_cast<const char*>(region.deviceMemory);
     const char* regionEnd   = regionStart + region.size;

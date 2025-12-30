@@ -2,6 +2,7 @@
 #include "memory_pool/cpu/fixed_size_allocator.hpp"
 #include "memory_pool/cpu/variable_size_allocator.hpp"
 #include "memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/debug_tools.hpp"
 #include <cstring>
 
 namespace memory_pool {
@@ -60,6 +61,7 @@ void* CPUMemoryPool::allocateInternal(size_t size, AllocFlags flags) {
 
         if (config.enableDebugging) {
             stats.trackAllocation(ptr, size);
+            MemoryLeakDetector::getInstance().trackAllocation(ptr, size, name);
         }
     }
 
@@ -99,6 +101,7 @@ void CPUMemoryPool::deallocate(void* ptr) {
 
         if (config.enableDebugging) {
             stats.trackDeallocation(ptr);
+            MemoryLeakDetector::getInstance().trackDeallocation(ptr, name);
         }
     }
 }

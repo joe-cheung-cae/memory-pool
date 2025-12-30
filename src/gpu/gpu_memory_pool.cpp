@@ -1,6 +1,7 @@
 #include "memory_pool/gpu/gpu_memory_pool.hpp"
 #include "memory_pool/gpu/cuda_allocator.hpp"
 #include "memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/debug_tools.hpp"
 #include <cstring>
 
 namespace memory_pool {
@@ -76,6 +77,7 @@ void* GPUMemoryPool::allocateInternal(size_t size, AllocFlags flags) {
 
         if (config.enableDebugging) {
             stats.trackAllocation(ptr, size);
+            MemoryLeakDetector::getInstance().trackAllocation(ptr, size, name);
         }
     }
 
@@ -117,6 +119,7 @@ void GPUMemoryPool::deallocate(void* ptr) {
 
         if (config.enableDebugging) {
             stats.trackDeallocation(ptr);
+            MemoryLeakDetector::getInstance().trackDeallocation(ptr, name);
         }
     }
 }

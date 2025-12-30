@@ -173,6 +173,13 @@ void cudaMemcpy(void* dst, const void* src, size_t size, bool hostToDevice) {
 
     cudaMemcpyKind kind = hostToDevice ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToHost;
     CUDA_CHECK(cudaMemcpy(dst, src, size, kind));
+
+#ifdef HAVE_VALGRIND
+    // When copying from device to host, mark the host memory as defined for Valgrind
+    if (!hostToDevice) {
+        VALGRIND_MAKE_MEM_DEFINED(dst, size);
+    }
+#endif
 }
 
 // Copy memory between host and device asynchronously
@@ -183,6 +190,14 @@ void cudaMemcpyAsync(void* dst, const void* src, size_t size, bool hostToDevice,
 
     cudaMemcpyKind kind = hostToDevice ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToHost;
     CUDA_CHECK(cudaMemcpyAsync(dst, src, size, kind, stream));
+
+#ifdef HAVE_VALGRIND
+    // When copying from device to host, mark the host memory as defined for Valgrind
+    // Note: For async operations, this should be done after synchronization
+    if (!hostToDevice) {
+        VALGRIND_MAKE_MEM_DEFINED(dst, size);
+    }
+#endif
 }
 
 }  // namespace memory_pool
