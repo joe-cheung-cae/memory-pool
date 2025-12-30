@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.14)
+
+# Set the CUDA architectures
+set(CMAKE_CUDA_ARCHITECTURES native CACHE STRING "Choose the CUDA architectures")
+set_property(CACHE CMAKE_CUDA_ARCHITECTURES PROPERTY STRINGS native all all-major)
+
 project(memory_pool VERSION 1.0.0 LANGUAGES CXX CUDA)
+
+# Set CMAKE build type
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the build type")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Release Debug)
+message(STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 
 # Enable compile commands export
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -9,10 +19,6 @@ set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Set CUDA standard
-set(CMAKE_CUDA_STANDARD 14)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # Find CUDA package
 find_package(CUDAToolkit REQUIRED)
