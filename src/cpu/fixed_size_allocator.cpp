@@ -1,5 +1,6 @@
 #include "memory_pool/cpu/fixed_size_allocator.hpp"
 #include "memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/numa_utils.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
@@ -23,7 +24,7 @@ FixedSizeAllocator::FixedSizeAllocator(size_t blockSize, size_t initialBlocks, s
 FixedSizeAllocator::~FixedSizeAllocator() {
     // Free all allocated chunks
     for (const auto& chunk : chunks) {
-        free(chunk.memory);
+        numa_utils::deallocate(chunk.memory);
     }
 
     // Clear data structures
@@ -153,7 +154,7 @@ size_t FixedSizeAllocator::getUsedBlocks() const { return usedBlocks; }
 void FixedSizeAllocator::allocateChunk(size_t blockCount) {
     // Allocate memory for the chunk
     size_t chunkSize = alignedBlockSize * blockCount;
-    void*  memory    = aligned_alloc(alignment, chunkSize);
+    void*  memory    = numa_utils::allocate_on_node(chunkSize, alignment, numa_utils::get_current_numa_node());
 
     if (memory == nullptr) {
         reportError(ErrorSeverity::Error, "FixedSizeAllocator: Failed to allocate memory for chunk");

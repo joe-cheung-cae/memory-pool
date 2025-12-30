@@ -1,5 +1,6 @@
 #include "memory_pool/cpu/variable_size_allocator.hpp"
 #include "memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/numa_utils.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
@@ -17,7 +18,7 @@ VariableSizeAllocator::VariableSizeAllocator(size_t initialSize, size_t alignmen
 VariableSizeAllocator::~VariableSizeAllocator() {
     // Free all allocated regions
     for (const auto& region : regions) {
-        free(region.memory);
+        numa_utils::deallocate(region.memory);
     }
 
     // Clear data structures
@@ -209,7 +210,7 @@ void VariableSizeAllocator::addRegion(size_t size) {
     size_t alignedSize = align_size(size, alignment);
 
     // Allocate memory for the region
-    void* memory = aligned_alloc(alignment, alignedSize);
+    void* memory = numa_utils::allocate_on_node(alignedSize, alignment, numa_utils::get_current_numa_node());
 
     if (memory == nullptr) {
         reportError(ErrorSeverity::Error, "VariableSizeAllocator: Failed to allocate memory for region");

@@ -218,6 +218,67 @@ void GPUMemoryPool::copyDeviceToDevice(void* dst, const void* src, size_t size) 
     synchronizeStream(stream);
 }
 
+cudaEvent_t GPUMemoryPool::copyHostToDeviceAsync(void* dst, const void* src, size_t size) {
+    if (dst == nullptr || src == nullptr || size == 0) {
+        return nullptr;
+    }
+
+    // Ensure we're on the correct device
+    ensureCorrectDevice();
+
+    // Copy the data asynchronously using the stream
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyHostToDevice, stream);
+
+    // Create and record an event
+    cudaEvent_t event = createEvent();
+    recordEvent(event, stream);
+
+    return event;
+}
+
+cudaEvent_t GPUMemoryPool::copyDeviceToHostAsync(void* dst, const void* src, size_t size) {
+    if (dst == nullptr || src == nullptr || size == 0) {
+        return nullptr;
+    }
+
+    // Ensure we're on the correct device
+    ensureCorrectDevice();
+
+    // Copy the data asynchronously using the stream
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToHost, stream);
+
+    // Create and record an event
+    cudaEvent_t event = createEvent();
+    recordEvent(event, stream);
+
+    return event;
+}
+
+cudaEvent_t GPUMemoryPool::copyDeviceToDeviceAsync(void* dst, const void* src, size_t size) {
+    if (dst == nullptr || src == nullptr || size == 0) {
+        return nullptr;
+    }
+
+    // Ensure we're on the correct device
+    ensureCorrectDevice();
+
+    // Copy the data asynchronously using the stream
+    cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToDevice, stream);
+
+    // Create and record an event
+    cudaEvent_t event = createEvent();
+    recordEvent(event, stream);
+
+    return event;
+}
+
+void GPUMemoryPool::synchronizeEvent(cudaEvent_t event) {
+    if (event != nullptr) {
+        waitEvent(event);
+        destroyEvent(event);
+    }
+}
+
 void GPUMemoryPool::ensureCorrectDevice() const {
     int currentDevice = getCurrentDevice();
     if (currentDevice != deviceId) {

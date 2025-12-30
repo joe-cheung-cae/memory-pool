@@ -31,6 +31,14 @@ add_definitions(-DHAVE_VALGRIND)
 include_directories(${VALGRIND_INCLUDE_DIRS})
 link_directories(${VALGRIND_LIBRARY_DIRS})
 
+# Find NUMA (optional)
+pkg_check_modules(NUMA numa)
+if(NUMA_FOUND)
+    add_definitions(-DHAVE_NUMA)
+    include_directories(${NUMA_INCLUDE_DIRS})
+    link_directories(${NUMA_LIBRARY_DIRS})
+endif()
+
 # Options
 option(BUILD_EXAMPLES "Build example programs" ON)
 option(BUILD_TESTS "Build test programs" OFF)
@@ -65,11 +73,15 @@ set(SOURCES
     src/utils/thread_safety.cpp
     src/utils/debug_tools.cpp
     src/utils/error_handling.cpp
+    src/utils/numa_utils.cpp
 )
 
 # Create the library
 add_library(memory_pool ${SOURCES})
 target_link_libraries(memory_pool CUDA::cudart)
+if(NUMA_FOUND)
+    target_link_libraries(memory_pool ${NUMA_LIBRARIES})
+endif()
 
 # Examples
 if(BUILD_EXAMPLES)
@@ -96,6 +108,14 @@ if(BUILD_TESTS)
     add_executable(manager_tests tests/unit/manager_tests.cpp)
     target_link_libraries(manager_tests memory_pool)
     add_test(NAME manager_tests COMMAND manager_tests)
+
+    add_executable(numa_tests tests/unit/numa_tests.cpp)
+    target_link_libraries(numa_tests memory_pool)
+    add_test(NAME numa_tests COMMAND numa_tests)
+
+    add_executable(multi_gpu_tests tests/unit/multi_gpu_tests.cpp)
+    target_link_libraries(multi_gpu_tests memory_pool)
+    add_test(NAME multi_gpu_tests COMMAND multi_gpu_tests)
 
     # Integration tests
     add_executable(cpu_gpu_integration_tests tests/integration/cpu_gpu_integration_tests.cpp)

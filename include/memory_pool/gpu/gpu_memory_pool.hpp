@@ -84,6 +84,39 @@ class GPUMemoryPool : public IMemoryPool {
      */
     void copyDeviceToDevice(void* dst, const void* src, size_t size);
 
+    /**
+     * @brief Asynchronously copies data from host memory to device memory.
+     * @param dst Destination device pointer.
+     * @param src Source host pointer.
+     * @param size Number of bytes to copy.
+     * @return CUDA event for synchronization.
+     */
+    cudaEvent_t copyHostToDeviceAsync(void* dst, const void* src, size_t size);
+
+    /**
+     * @brief Asynchronously copies data from device memory to host memory.
+     * @param dst Destination host pointer.
+     * @param src Source device pointer.
+     * @param size Number of bytes to copy.
+     * @return CUDA event for synchronization.
+     */
+    cudaEvent_t copyDeviceToHostAsync(void* dst, const void* src, size_t size);
+
+    /**
+     * @brief Asynchronously copies data from device memory to device memory.
+     * @param dst Destination device pointer.
+     * @param src Source device pointer.
+     * @param size Number of bytes to copy.
+     * @return CUDA event for synchronization.
+     */
+    cudaEvent_t copyDeviceToDeviceAsync(void* dst, const void* src, size_t size);
+
+    /**
+     * @brief Synchronizes on a CUDA event.
+     * @param event The event to wait for.
+     */
+    void synchronizeEvent(cudaEvent_t event);
+
   private:
     // Pool identification
     std::string name;

@@ -159,6 +159,37 @@ void cudaMemcpy(void* dst, const void* src, size_t size, bool hostToDevice);
  */
 void cudaMemcpyAsync(void* dst, const void* src, size_t size, bool hostToDevice, cudaStream_t stream);
 
+/**
+ * @brief Creates a CUDA event.
+ * @return The created CUDA event.
+ */
+cudaEvent_t createEvent();
+
+/**
+ * @brief Destroys a CUDA event.
+ * @param event The event to destroy.
+ */
+void destroyEvent(cudaEvent_t event);
+
+/**
+ * @brief Records a CUDA event on a stream.
+ * @param event The event to record.
+ * @param stream The stream to record the event on.
+ */
+void recordEvent(cudaEvent_t event, cudaStream_t stream);
+
+/**
+ * @brief Waits for a CUDA event to complete.
+ * @param event The event to wait for.
+ */
+void waitEvent(cudaEvent_t event);
+
+/**
+ * @brief Synchronizes on a CUDA event.
+ * @param event The event to synchronize on.
+ */
+void synchronizeEvent(cudaEvent_t event);
+
 }  // namespace memory_pool
 
 #endif  // MEMORY_POOL_CUDA_UTILS_HPP

@@ -1,8 +1,10 @@
 #include "memory_pool/memory_pool.hpp"
 #include "memory_pool/cpu/cpu_memory_pool.hpp"
 #include "memory_pool/gpu/gpu_memory_pool.hpp"
+#include "memory_pool/gpu/cuda_utils.hpp"
 #include "memory_pool/utils/error_handling.hpp"
 #include <stdexcept>
+#include <algorithm>
 
 namespace memory_pool {
 
@@ -15,7 +17,17 @@ MemoryPoolManager& MemoryPoolManager::getInstance() {
 MemoryPoolManager::MemoryPoolManager() {
     // Create default pools
     createCPUPool("default", PoolConfig::DefaultCPU());
-    createGPUPool("default_gpu", PoolConfig::DefaultGPU());
+
+    // Create default GPU pool on the best available device
+    int bestDevice = selectBestGPUDevice();
+    if (bestDevice >= 0) {
+        PoolConfig gpuConfig = PoolConfig::DefaultGPU();
+        gpuConfig.deviceId = bestDevice;
+        createGPUPool("default_gpu", gpuConfig);
+    } else {
+        // Fallback to device 0 if no devices available
+        createGPUPool("default_gpu", PoolConfig::DefaultGPU());
+    }
 }
 
 MemoryPoolManager::~MemoryPoolManager() {
@@ -127,6 +139,54 @@ std::map<std::string, std::string> MemoryPoolManager::getAllStats() const {
     return stats;
 }
 
+int MemoryPoolManager::getGPUDeviceCount() {
+    return getDeviceCount();
+}
+
+bool MemoryPoolManager::isGPUDeviceAvailable(int deviceId) {
+    return isDeviceAvailable(deviceId);
+}
+
+size_t MemoryPoolManager::getGPUDeviceMemory(int deviceId) {
+    return getDeviceMemory(deviceId);
+}
+
+int MemoryPoolManager::selectBestGPUDevice() {
+    int deviceCount = getGPUDeviceCount();
+    if (deviceCount == 0) {
+        return -1;
+    }
+
+    // Select device with most available memory
+    int    bestDevice = -1;
+    size_t maxMemory  = 0;
+
+    for (int i = 0; i < deviceCount; ++i) {
+        if (isGPUDeviceAvailable(i)) {
+            size_t memory = getGPUDeviceMemory(i);
+            if (memory > maxMemory) {
+                maxMemory  = memory;
+                bestDevice = i;
+            }
+        }
+    }
+
+    return bestDevice;
+}
+
+IMemoryPool* MemoryPoolManager::createGPUPoolForDevice(int deviceId, const PoolConfig& config) {
+    if (!isGPUDeviceAvailable(deviceId)) {
+        reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU device " + std::to_string(deviceId) + " not available");
+        return nullptr;
+    }
+
+    std::string poolName = "gpu_" + std::to_string(deviceId);
+    PoolConfig  deviceConfig = config;
+    deviceConfig.deviceId = deviceId;
+
+    return createGPUPool(poolName, deviceConfig);
+}
+
 // Helper functions for common operations
 void* allocate(size_t size, const std::string& poolName) {
     IMemoryPool* pool = MemoryPoolManager::getInstance().getCPUPool(poolName);
@@ -154,6 +214,26 @@ void* allocateGPU(size_t size, const std::string& poolName) {
     IMemoryPool* pool = MemoryPoolManager::getInstance().getGPUPool(poolName);
     if (pool == nullptr) {
         throw InvalidOperationException("GPU pool '" + poolName + "' not found");
+    }
+
+    return pool->allocate(size);
+}
+
+void* allocateGPU(size_t size, int deviceId) {
+    MemoryPoolManager& manager = MemoryPoolManager::getInstance();
+
+    if (!manager.isGPUDeviceAvailable(deviceId)) {
+        throw InvalidOperationException("GPU device " + std::to_string(deviceId) + " not available");
+    }
+
+    // Create pool for the device if not exists
+    std::string poolName = "gpu_" + std::to_string(deviceId);
+    IMemoryPool* pool = manager.getGPUPool(poolName);
+    if (pool == nullptr) {
+        pool = manager.createGPUPoolForDevice(deviceId);
+        if (pool == nullptr) {
+            throw InvalidOperationException("Failed to create GPU pool for device " + std::to_string(deviceId));
+        }
     }
 
     return pool->allocate(size);

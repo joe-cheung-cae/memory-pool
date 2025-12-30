@@ -380,6 +380,70 @@ void testMemoryPoolManagerGPU() {
     std::cout << "MemoryPoolManager GPU tests passed!" << std::endl;
 }
 
+void testGPUMemoryPoolAsyncCopy() {
+    std::cout << "Testing GPUMemoryPool async copy..." << std::endl;
+
+    // Create GPU memory pool
+    PoolConfig config;
+    config.allocatorType = AllocatorType::VariableSize;
+    config.initialSize   = 1024 * 10;  // 10KB
+    config.deviceId      = 0;
+
+    GPUMemoryPool pool("test_async_pool", config);
+
+    // Allocate GPU memory
+    void* gpuPtr = pool.allocate(1024);
+    if (gpuPtr == nullptr) {
+        throw std::runtime_error("Failed to allocate GPU memory for async test");
+    }
+
+    // Prepare host data
+    std::vector<char> hostData(1024, 'A');
+    std::vector<char> hostResult(1024, 0);
+
+    // Test async host to device copy
+    cudaEvent_t event1 = pool.copyHostToDeviceAsync(gpuPtr, hostData.data(), 1024);
+    if (event1 == nullptr) {
+        throw std::runtime_error("Async host to device copy failed");
+    }
+
+    // Wait for completion
+    pool.synchronizeEvent(event1);
+
+    // Test async device to host copy
+    cudaEvent_t event2 = pool.copyDeviceToHostAsync(hostResult.data(), gpuPtr, 1024);
+    if (event2 == nullptr) {
+        throw std::runtime_error("Async device to host copy failed");
+    }
+
+    // Wait for completion
+    pool.synchronizeEvent(event2);
+
+    // Verify data
+    if (hostResult != hostData) {
+        throw std::runtime_error("Async copy data mismatch");
+    }
+
+    // Test async device to device copy
+    void* gpuPtr2 = pool.allocate(1024);
+    if (gpuPtr2 == nullptr) {
+        throw std::runtime_error("Failed to allocate second GPU memory");
+    }
+
+    cudaEvent_t event3 = pool.copyDeviceToDeviceAsync(gpuPtr2, gpuPtr, 1024);
+    if (event3 == nullptr) {
+        throw std::runtime_error("Async device to device copy failed");
+    }
+
+    pool.synchronizeEvent(event3);
+
+    // Clean up
+    pool.deallocate(gpuPtr);
+    pool.deallocate(gpuPtr2);
+
+    std::cout << "GPUMemoryPool async copy tests passed!" << std::endl;
+}
+
 int main() {
     std::cout << "Running GPU unit tests..." << std::endl;
 
@@ -398,6 +462,7 @@ int main() {
         testGPUMemoryPoolVariableSize();
         testGPUMemoryLeakDetection();
         testMemoryPoolManagerGPU();
+        testGPUMemoryPoolAsyncCopy();
 
         std::cout << "All GPU unit tests passed!" << std::endl;
         return 0;

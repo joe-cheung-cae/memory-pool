@@ -200,4 +200,33 @@ void cudaMemcpyAsync(void* dst, const void* src, size_t size, bool hostToDevice,
 #endif
 }
 
+// Create a CUDA event
+cudaEvent_t createEvent() {
+    cudaEvent_t event;
+    CUDA_CHECK(cudaEventCreate(&event));
+    return event;
+}
+
+// Destroy a CUDA event
+void destroyEvent(cudaEvent_t event) {
+    if (event != nullptr) {
+        CUDA_CHECK(cudaEventDestroy(event));
+    }
+}
+
+// Record a CUDA event on a stream
+void recordEvent(cudaEvent_t event, cudaStream_t stream) {
+    CUDA_CHECK(cudaEventRecord(event, stream));
+}
+
+// Wait for a CUDA event
+void waitEvent(cudaEvent_t event) {
+    CUDA_CHECK(cudaEventSynchronize(event));
+}
+
+// Synchronize on a CUDA event
+void synchronizeEvent(cudaEvent_t event) {
+    CUDA_CHECK(cudaEventSynchronize(event));
+}
+
 }  // namespace memory_pool

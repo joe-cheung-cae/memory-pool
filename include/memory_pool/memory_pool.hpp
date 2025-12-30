@@ -136,6 +136,40 @@ class MemoryPoolManager {
      */
     std::map<std::string, std::string> getAllStats() const;
 
+    /**
+     * @brief Gets the number of available GPU devices.
+     * @return The number of GPU devices.
+     */
+    int getGPUDeviceCount();
+
+    /**
+     * @brief Checks if a GPU device is available.
+     * @param deviceId The device ID to check.
+     * @return True if the device is available.
+     */
+    bool isGPUDeviceAvailable(int deviceId);
+
+    /**
+     * @brief Gets the total memory of a GPU device.
+     * @param deviceId The device ID.
+     * @return The total memory in bytes.
+     */
+    size_t getGPUDeviceMemory(int deviceId);
+
+    /**
+     * @brief Selects the best GPU device based on available memory.
+     * @return The selected device ID, or -1 if no devices available.
+     */
+    int selectBestGPUDevice();
+
+    /**
+     * @brief Creates a GPU pool for a specific device.
+     * @param deviceId The device ID.
+     * @param config The pool configuration (deviceId will be overridden).
+     * @return Pointer to the created pool.
+     */
+    IMemoryPool* createGPUPoolForDevice(int deviceId, const PoolConfig& config = PoolConfig::DefaultGPU());
+
     // Prevent copying and assignment
     MemoryPoolManager(const MemoryPoolManager&)            = delete;
     MemoryPoolManager& operator=(const MemoryPoolManager&) = delete;
@@ -173,6 +207,14 @@ void deallocate(void* ptr, const std::string& poolName = "default");
 void* allocateGPU(size_t size, const std::string& poolName = "default_gpu");
 
 /**
+ * @brief Allocates GPU memory from a specific device.
+ * @param size The size in bytes to allocate.
+ * @param deviceId The GPU device ID to use.
+ * @return Pointer to the allocated GPU memory.
+ */
+void* allocateGPU(size_t size, int deviceId);
+
+/**
  * @brief Deallocates GPU memory from the default GPU pool.
  * @param ptr Pointer to the GPU memory to deallocate.
  * @param poolName The name of the pool to use (default: "default_gpu").
@@ -201,6 +243,18 @@ T* allocate(size_t count = 1, const std::string& poolName = "default") {
 template <typename T>
 T* allocateGPU(size_t count = 1, const std::string& poolName = "default_gpu") {
     return static_cast<T*>(allocateGPU(sizeof(T) * count, poolName));
+}
+
+/**
+ * @brief Template function for typed GPU memory allocation on a specific device.
+ * @tparam T The type of objects to allocate.
+ * @param count The number of objects to allocate (default: 1).
+ * @param deviceId The GPU device ID to use.
+ * @return Pointer to the allocated typed GPU memory.
+ */
+template <typename T>
+T* allocateGPU(size_t count, int deviceId) {
+    return static_cast<T*>(allocateGPU(sizeof(T) * count, deviceId));
 }
 
 /**
