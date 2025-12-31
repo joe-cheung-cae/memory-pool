@@ -6,6 +6,10 @@
 #include <stdexcept>
 #include <algorithm>
 
+#ifdef HAVE_PMEM
+#include "memory_pool/pmem/pmem_memory_pool.hpp"
+#endif
+
 namespace memory_pool {
 
 // Singleton instance
@@ -186,6 +190,53 @@ IMemoryPool* MemoryPoolManager::createGPUPoolForDevice(int deviceId, const PoolC
 
     return createGPUPool(poolName, deviceConfig);
 }
+
+#ifdef HAVE_PMEM
+
+IMemoryPool* MemoryPoolManager::getPMEMPool(const std::string& name) {
+    std::lock_guard<std::mutex> lock(poolsMutex);
+
+    auto it = pools.find(name);
+    if (it != pools.end() && it->second->getMemoryType() == MemoryType::PMEM) {
+        return it->second.get();
+    }
+
+    reportError(ErrorSeverity::Warning, "MemoryPoolManager: PMEM pool '" + name + "' not found");
+    return nullptr;
+}
+
+IMemoryPool* MemoryPoolManager::createPMEMPool(const std::string& name, const PoolConfig& config) {
+    std::lock_guard<std::mutex> lock(poolsMutex);
+
+    // Check if a pool with this name already exists
+    if (pools.find(name) != pools.end()) {
+        reportError(ErrorSeverity::Warning, "MemoryPoolManager: Pool '" + name + "' already exists");
+        return pools[name].get();
+    }
+
+    // Create a new PMEM pool
+    auto         pool    = std::make_unique<PMEMMemoryPool>(name, config);
+    IMemoryPool* poolPtr = pool.get();
+
+    // Add the pool to the map
+    pools[name] = std::move(pool);
+
+    return poolPtr;
+}
+
+#else  // HAVE_PMEM
+
+IMemoryPool* MemoryPoolManager::getPMEMPool(const std::string& name) {
+    reportError(ErrorSeverity::Error, "MemoryPoolManager: PMEM support not available - libpmem not found");
+    return nullptr;
+}
+
+IMemoryPool* MemoryPoolManager::createPMEMPool(const std::string& name, const PoolConfig& config) {
+    reportError(ErrorSeverity::Error, "MemoryPoolManager: PMEM support not available - libpmem not found");
+    return nullptr;
+}
+
+#endif  // HAVE_PMEM
 
 // Helper functions for common operations
 void* allocate(size_t size, const std::string& poolName) {

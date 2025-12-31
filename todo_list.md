@@ -60,10 +60,10 @@
   - **Steps**: Add fragmentation stress tests, monitor memory efficiency over time
 
 ### Future Extensions
-- [ ] Implement persistent memory support
-  - **Rationale**: Support for NVRAM and persistent storage
-  - **Impact**: New use cases, data persistence
-  - **Steps**: Add PMEM allocator, integrate with existing APIs
+- [x] Implement persistent memory support
+   - **Rationale**: Support for NVRAM and persistent storage
+   - **Impact**: New use cases, data persistence
+   - **Steps**: Add PMEM allocator, integrate with existing APIs
 - [ ] Add user-space memory allocators for specialized hardware
   - **Rationale**: Support for RDMA, accelerators
   - **Impact**: Extended hardware support

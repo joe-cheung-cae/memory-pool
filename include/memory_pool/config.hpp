@@ -53,6 +53,11 @@ struct PoolConfig {
     /** @brief Whether to use CUDA managed memory */
     bool useManagedMemory = false;  // Use CUDA managed memory
 
+    /** @brief Path to the persistent memory pool file for PMEM pools */
+    std::string pmemPoolPath;       // Path to PMEM pool file
+    /** @brief Whether to enable automatic persistence on allocation */
+    bool        autoPersist = false; // Auto-persist allocations
+
     /** @brief Memory alignment requirement */
     size_t alignment    = DEFAULT_ALIGNMENT;
     /** @brief Growth factor when expanding the pool */

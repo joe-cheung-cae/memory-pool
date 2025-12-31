@@ -39,6 +39,14 @@ if(NUMA_FOUND)
     link_directories(${NUMA_LIBRARY_DIRS})
 endif()
 
+# Find PMEM (optional)
+pkg_check_modules(PMEM libpmem)
+if(PMEM_FOUND)
+    add_definitions(-DHAVE_PMEM)
+    include_directories(${PMEM_INCLUDE_DIRS})
+    link_directories(${PMEM_LIBRARY_DIRS})
+endif()
+
 # Options
 option(BUILD_EXAMPLES "Build example programs" ON)
 option(BUILD_TESTS "Build test programs" OFF)
@@ -76,11 +84,22 @@ set(SOURCES
     src/utils/numa_utils.cpp
 )
 
+if(PMEM_FOUND)
+    list(APPEND SOURCES
+        src/pmem/pmem_memory_pool.cpp
+        src/pmem/pmem_fixed_size_allocator.cpp
+        src/pmem/pmem_variable_size_allocator.cpp
+    )
+endif()
+
 # Create the library
 add_library(memory_pool ${SOURCES})
 target_link_libraries(memory_pool CUDA::cudart)
 if(NUMA_FOUND)
     target_link_libraries(memory_pool ${NUMA_LIBRARIES})
+endif()
+if(PMEM_FOUND)
+    target_link_libraries(memory_pool ${PMEM_LIBRARIES})
 endif()
 
 # Examples
@@ -90,6 +109,11 @@ if(BUILD_EXAMPLES)
 
     add_executable(gpu_example examples/gpu_examples.cpp)
     target_link_libraries(gpu_example memory_pool)
+
+    if(PMEM_FOUND)
+        add_executable(pmem_example examples/pmem_examples.cpp)
+        target_link_libraries(pmem_example memory_pool)
+    endif()
 endif()
 
 # Enable testing
@@ -120,6 +144,12 @@ if(BUILD_TESTS)
     add_executable(fuzz_tests tests/unit/fuzz_tests.cpp)
     target_link_libraries(fuzz_tests memory_pool)
     add_test(NAME fuzz_tests COMMAND fuzz_tests 2)  # Run for 2 seconds
+
+    if(PMEM_FOUND)
+        add_executable(pmem_tests tests/unit/pmem_tests.cpp)
+        target_link_libraries(pmem_tests memory_pool)
+        add_test(NAME pmem_tests COMMAND pmem_tests)
+    endif()
 
     # Integration tests
     add_executable(cpu_gpu_integration_tests tests/integration/cpu_gpu_integration_tests.cpp)

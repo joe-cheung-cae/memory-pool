@@ -11,7 +11,8 @@ This library provides efficient memory allocation and deallocation for high-perf
 - **Cross-Hardware Support**:
   - CPU memory pool management
   - GPU memory pool management via CUDA
-  - Seamless integration between CPU and GPU memory operations
+  - Persistent memory (PMEM) support via PMDK/libpmem
+  - Seamless integration between CPU, GPU, and PMEM operations
 
 - **Allocation Strategies**:
   - Fixed-size block allocation
@@ -37,6 +38,7 @@ This library provides efficient memory allocation and deallocation for high-perf
 
 - C++17 compatible compiler
 - CUDA Toolkit 11.0 or higher (for GPU support)
+- PMDK (Persistent Memory Development Kit) (for PMEM support, optional)
 - CMake 3.14 or higher
 
 ## Building
@@ -124,6 +126,43 @@ int main() {
     pool->deallocate(deviceData);
     deallocate(hostData);
     
+    return 0;
+}
+```
+
+### Basic PMEM Memory Pool
+
+```cpp
+#include "memory_pool/memory_pool.hpp"
+#include <iostream>
+#include <cstring>
+
+using namespace memory_pool;
+
+int main() {
+    // Get the memory pool manager
+    auto& manager = MemoryPoolManager::getInstance();
+
+    // Create a PMEM memory pool with custom configuration
+    PoolConfig config;
+    config.initialSize = 2 * 1024 * 1024;  // 2MB
+    config.pmemPoolPath = "/tmp/my_persistent_pool.pool";
+
+    auto* pool = manager.createPMEMPool("persistent_pool", config);
+
+    // Allocate persistent memory
+    void* data = pool->allocate(1024);
+    strcpy(static_cast<char*>(data), "This data persists!");
+
+    // Persist the data explicitly
+    PMEMMemoryPool* pmemPool = static_cast<PMEMMemoryPool*>(pool);
+    pmemPool->persist(data, strlen("This data persists!") + 1);
+
+    std::cout << "Data written and persisted: " << static_cast<char*>(data) << std::endl;
+
+    // Deallocate memory
+    pool->deallocate(data);
+
     return 0;
 }
 ```

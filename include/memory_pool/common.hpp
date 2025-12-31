@@ -50,12 +50,24 @@ class InvalidOperationException : public MemoryPoolException {
  * @brief Exception thrown when an invalid pointer is used.
  */
 class InvalidPointerException : public MemoryPoolException {
-  public:
+   public:
     /**
      * @brief Constructs an invalid pointer exception with a message.
      * @param message The error message.
      */
     explicit InvalidPointerException(const std::string& message) : MemoryPoolException(message) {}
+};
+
+/**
+ * @brief Exception thrown when persistent memory operations fail.
+ */
+class PMEMException : public MemoryPoolException {
+   public:
+    /**
+     * @brief Constructs a PMEM exception with a message.
+     * @param message The error message.
+     */
+    explicit PMEMException(const std::string& message) : MemoryPoolException(message) {}
 };
 
 /**
@@ -76,12 +88,12 @@ inline size_t align_size(size_t size, size_t alignment = DEFAULT_ALIGNMENT) {
 /**
  * @brief Enumeration for memory types.
  */
-enum class MemoryType { CPU, GPU };
+enum class MemoryType { CPU, GPU, PMEM };
 
 /**
  * @brief Flags for memory allocation options.
  */
-enum class AllocFlags { None = 0, ZeroMemory = 1 << 0, Pinned = 1 << 1, Managed = 1 << 2 };
+enum class AllocFlags { None = 0, ZeroMemory = 1 << 0, Pinned = 1 << 1, Managed = 1 << 2, Persist = 1 << 3 };
 
 /**
  * @brief Bitwise OR operator for AllocFlags.
