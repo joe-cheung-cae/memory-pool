@@ -10,6 +10,10 @@
 #include <cstring>
 #include <algorithm>
 
+#ifdef MEMORY_POOL_PLATFORM_WINDOWS
+#include <malloc.h>
+#endif
+
 namespace memory_pool {
 namespace numa_utils {
 
@@ -83,7 +87,11 @@ void* allocate_on_node(size_t size, size_t alignment, int node) {
 #endif
 
     // Fallback to standard aligned allocation
+#ifdef MEMORY_POOL_PLATFORM_WINDOWS
+    return _aligned_malloc(size, alignment);
+#else
     return aligned_alloc(alignment, size);
+#endif
 }
 
 void deallocate(void* ptr) {
@@ -106,7 +114,11 @@ void deallocate(void* ptr) {
 #endif
 
     // Fallback to standard free
+#ifdef MEMORY_POOL_PLATFORM_WINDOWS
+    _aligned_free(ptr);
+#else
     free(ptr);
+#endif
 }
 
 }  // namespace numa_utils

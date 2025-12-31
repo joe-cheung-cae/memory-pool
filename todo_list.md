@@ -44,14 +44,14 @@
   - **Steps**: Create fuzz tests for allocation sizes, add to CI pipeline
 
 ### Documentation and User Experience
-- [ ] Add performance profiling guides and tools
-  - **Rationale**: Help users optimize their applications
-  - **Impact**: Better user experience, improved performance adoption
-  - **Steps**: Create profiling examples, document optimization techniques
-- [ ] Expand cross-platform compatibility documentation
-  - **Rationale**: Current docs focus on Linux/CUDA
-  - **Impact**: Wider adoption, better platform support
-  - **Steps**: Add Windows-specific guides, macOS support if applicable
+- [x] Add performance profiling guides and tools
+   - **Rationale**: Help users optimize their applications
+   - **Impact**: Better user experience, improved performance adoption
+   - **Steps**: Create profiling examples, document optimization techniques
+- [x] Expand cross-platform compatibility documentation
+   - **Rationale**: Current docs focus on Linux/CUDA
+   - **Impact**: Wider adoption, better platform support
+   - **Steps**: Add Windows-specific guides, macOS support if applicable
 
 ### Testing and Validation
 - [x] Extend performance benchmarks to include memory fragmentation scenarios

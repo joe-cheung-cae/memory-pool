@@ -5,6 +5,34 @@
 #include <string>
 #include <stdexcept>
 
+// Platform-specific macros
+#if defined(_WIN32) || defined(_WIN64)
+    #define MEMORY_POOL_PLATFORM_WINDOWS
+#elif defined(__APPLE__)
+    #define MEMORY_POOL_PLATFORM_MACOS
+#elif defined(__linux__)
+    #define MEMORY_POOL_PLATFORM_LINUX
+#else
+    #define MEMORY_POOL_PLATFORM_UNKNOWN
+#endif
+
+// Feature availability macros (set by CMake)
+#ifndef HAVE_CUDA
+    #define HAVE_CUDA 0
+#endif
+
+#ifndef HAVE_VALGRIND
+    #define HAVE_VALGRIND 0
+#endif
+
+#ifndef HAVE_NUMA
+    #define HAVE_NUMA 0
+#endif
+
+#ifndef HAVE_PMEM
+    #define HAVE_PMEM 0
+#endif
+
 namespace memory_pool {
 
 // Forward declarations

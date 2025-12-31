@@ -161,4 +161,5 @@ int main() {
 - Learn about [GPU memory pools](gpu_tutorial.md)
 - Explore [advanced configuration options](configuration_tutorial.md)
 - Understand [performance optimization](performance_tutorial.md)
+- Check [cross-platform compatibility](cross_platform.md) for building on different operating systems
 - Read the [API reference](../api/README.md)

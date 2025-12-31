@@ -1,12 +1,16 @@
 #include "memory_pool/memory_pool.hpp"
 #include "memory_pool/cpu/cpu_memory_pool.hpp"
-#include "memory_pool/gpu/gpu_memory_pool.hpp"
-#include "memory_pool/gpu/cuda_utils.hpp"
 #include "memory_pool/custom/custom_allocator.hpp"
 #include "memory_pool/custom/custom_memory_pool.hpp"
 #include "memory_pool/utils/error_handling.hpp"
+#include "memory_pool/utils/platform_utils.hpp"
 #include <stdexcept>
 #include <algorithm>
+
+#if HAVE_CUDA
+#include "memory_pool/gpu/gpu_memory_pool.hpp"
+#include "memory_pool/gpu/cuda_utils.hpp"
+#endif
 
 #ifdef HAVE_PMEM
 #include "memory_pool/pmem/pmem_memory_pool.hpp"
@@ -24,6 +28,7 @@ MemoryPoolManager::MemoryPoolManager() {
     // Create default pools
     createCPUPool("default", PoolConfig::DefaultCPU());
 
+#if HAVE_CUDA
     // Create default GPU pool on the best available device
     int bestDevice = selectBestGPUDevice();
     if (bestDevice >= 0) {
@@ -34,6 +39,7 @@ MemoryPoolManager::MemoryPoolManager() {
         // Fallback to device 0 if no devices available
         createGPUPool("default_gpu", PoolConfig::DefaultGPU());
     }
+#endif
 }
 
 MemoryPoolManager::~MemoryPoolManager() {
@@ -71,6 +77,8 @@ IMemoryPool* MemoryPoolManager::createCPUPool(const std::string& name, const Poo
     return poolPtr;
 }
 
+#if HAVE_CUDA
+
 IMemoryPool* MemoryPoolManager::getGPUPool(const std::string& name) {
     std::lock_guard<std::mutex> lock(poolsMutex);
 
@@ -101,6 +109,20 @@ IMemoryPool* MemoryPoolManager::createGPUPool(const std::string& name, const Poo
 
     return poolPtr;
 }
+
+#else  // HAVE_CUDA
+
+IMemoryPool* MemoryPoolManager::getGPUPool(const std::string& name) {
+    reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
+    return nullptr;
+}
+
+IMemoryPool* MemoryPoolManager::createGPUPool(const std::string& name, const PoolConfig& config) {
+    reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
+    return nullptr;
+}
+
+#endif  // HAVE_CUDA
 
 bool MemoryPoolManager::destroyPool(const std::string& name) {
     std::lock_guard<std::mutex> lock(poolsMutex);
@@ -144,6 +166,8 @@ std::map<std::string, std::string> MemoryPoolManager::getAllStats() const {
 
     return stats;
 }
+
+#if HAVE_CUDA
 
 int MemoryPoolManager::getGPUDeviceCount() {
     return getDeviceCount();
@@ -192,6 +216,31 @@ IMemoryPool* MemoryPoolManager::createGPUPoolForDevice(int deviceId, const PoolC
 
     return createGPUPool(poolName, deviceConfig);
 }
+
+#else  // HAVE_CUDA
+
+int MemoryPoolManager::getGPUDeviceCount() {
+    return 0;
+}
+
+bool MemoryPoolManager::isGPUDeviceAvailable(int deviceId) {
+    return false;
+}
+
+size_t MemoryPoolManager::getGPUDeviceMemory(int deviceId) {
+    return 0;
+}
+
+int MemoryPoolManager::selectBestGPUDevice() {
+    return -1;
+}
+
+IMemoryPool* MemoryPoolManager::createGPUPoolForDevice(int deviceId, const PoolConfig& config) {
+    reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
+    return nullptr;
+}
+
+#endif  // HAVE_CUDA
 
 #ifdef HAVE_PMEM
 
@@ -315,6 +364,8 @@ void deallocate(void* ptr, const std::string& poolName) {
     pool->deallocate(ptr);
 }
 
+#if HAVE_CUDA
+
 void* allocateGPU(size_t size, const std::string& poolName) {
     IMemoryPool* pool = MemoryPoolManager::getInstance().getGPUPool(poolName);
     if (pool == nullptr) {
@@ -356,5 +407,21 @@ void deallocateGPU(void* ptr, const std::string& poolName) {
 
     pool->deallocate(ptr);
 }
+
+#else  // HAVE_CUDA
+
+void* allocateGPU(size_t size, const std::string& poolName) {
+    throw InvalidOperationException("GPU support not available - CUDA not found");
+}
+
+void* allocateGPU(size_t size, int deviceId) {
+    throw InvalidOperationException("GPU support not available - CUDA not found");
+}
+
+void deallocateGPU(void* ptr, const std::string& poolName) {
+    throw InvalidOperationException("GPU support not available - CUDA not found");
+}
+
+#endif  // HAVE_CUDA
 
 }  // namespace memory_pool

@@ -37,9 +37,11 @@ This library provides efficient memory allocation and deallocation for high-perf
 ## Requirements
 
 - C++17 compatible compiler
-- CUDA Toolkit 11.0 or higher (for GPU support)
-- PMDK (Persistent Memory Development Kit) (for PMEM support, optional)
+- CUDA Toolkit 11.0 or higher (for GPU support on Linux/Windows)
+- PMDK (Persistent Memory Development Kit) (for PMEM support on Linux, optional)
 - CMake 3.14 or higher
+
+See [Cross-Platform Compatibility Guide](docs/examples/cross_platform.md) for platform-specific requirements.
 
 ## Building
 

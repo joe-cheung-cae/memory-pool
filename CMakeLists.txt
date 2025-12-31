@@ -20,31 +20,45 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find CUDA package
-find_package(CUDAToolkit REQUIRED)
-include_directories(${CUDAToolkit_INCLUDE_DIRS})
-
-# Find Valgrind (required)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(VALGRIND REQUIRED valgrind)
-add_definitions(-DHAVE_VALGRIND)
-include_directories(${VALGRIND_INCLUDE_DIRS})
-link_directories(${VALGRIND_LIBRARY_DIRS})
-
-# Find NUMA (optional)
-pkg_check_modules(NUMA numa)
-if(NUMA_FOUND)
-    add_definitions(-DHAVE_NUMA)
-    include_directories(${NUMA_INCLUDE_DIRS})
-    link_directories(${NUMA_LIBRARY_DIRS})
+# Find CUDA package (optional on macOS)
+if(NOT APPLE)
+    find_package(CUDAToolkit REQUIRED)
+    include_directories(${CUDAToolkit_INCLUDE_DIRS})
+    set(HAVE_CUDA TRUE)
+else()
+    message(STATUS "CUDA not supported on macOS - GPU features will be disabled")
+    set(HAVE_CUDA FALSE)
 endif()
 
-# Find PMEM (optional)
-pkg_check_modules(PMEM libpmem)
-if(PMEM_FOUND)
-    add_definitions(-DHAVE_PMEM)
-    include_directories(${PMEM_INCLUDE_DIRS})
-    link_directories(${PMEM_LIBRARY_DIRS})
+# Find Valgrind (Linux only)
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(VALGRIND valgrind)
+    if(VALGRIND_FOUND)
+        add_definitions(-DHAVE_VALGRIND)
+        include_directories(${VALGRIND_INCLUDE_DIRS})
+        link_directories(${VALGRIND_LIBRARY_DIRS})
+    endif()
+endif()
+
+# Find NUMA (Linux only)
+if(UNIX AND NOT APPLE)
+    pkg_check_modules(NUMA numa)
+    if(NUMA_FOUND)
+        add_definitions(-DHAVE_NUMA)
+        include_directories(${NUMA_INCLUDE_DIRS})
+        link_directories(${NUMA_LIBRARY_DIRS})
+    endif()
+endif()
+
+# Find PMEM (Linux only)
+if(UNIX AND NOT APPLE)
+    pkg_check_modules(PMEM libpmem)
+    if(PMEM_FOUND)
+        add_definitions(-DHAVE_PMEM)
+        include_directories(${PMEM_INCLUDE_DIRS})
+        link_directories(${PMEM_LIBRARY_DIRS})
+    endif()
 endif()
 
 # Options
@@ -60,6 +74,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+elseif(MSVC)
+    # MSVC flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
 endif()
 
 # Set CUDA flags
@@ -74,18 +93,25 @@ set(SOURCES
     src/cpu/cpu_memory_pool.cpp
     src/cpu/fixed_size_allocator.cpp
     src/cpu/variable_size_allocator.cpp
-    src/gpu/gpu_memory_pool.cpp
-    src/gpu/cuda_allocator.cpp
-    src/gpu/cuda_utils.cpp
     src/stats/memory_stats.cpp
     src/utils/thread_safety.cpp
     src/utils/debug_tools.cpp
     src/utils/error_handling.cpp
     src/utils/numa_utils.cpp
+    src/utils/platform_utils.cpp
     src/custom/custom_allocator.cpp
     src/custom/custom_memory_pool.cpp
     src/custom/rdma_allocator.cpp
 )
+
+# Add GPU sources if CUDA is available
+if(HAVE_CUDA)
+    list(APPEND SOURCES
+        src/gpu/gpu_memory_pool.cpp
+        src/gpu/cuda_allocator.cpp
+        src/gpu/cuda_utils.cpp
+    )
+endif()
 
 if(PMEM_FOUND)
     list(APPEND SOURCES
@@ -97,7 +123,9 @@ endif()
 
 # Create the library
 add_library(memory_pool ${SOURCES})
-target_link_libraries(memory_pool CUDA::cudart)
+if(HAVE_CUDA)
+    target_link_libraries(memory_pool CUDA::cudart)
+endif()
 if(NUMA_FOUND)
     target_link_libraries(memory_pool ${NUMA_LIBRARIES})
 endif()
@@ -110,8 +138,10 @@ if(BUILD_EXAMPLES)
     add_executable(basic_example examples/basic_usage.cpp)
     target_link_libraries(basic_example memory_pool)
 
-    add_executable(gpu_example examples/gpu_examples.cpp)
-    target_link_libraries(gpu_example memory_pool)
+    if(HAVE_CUDA)
+        add_executable(gpu_example examples/gpu_examples.cpp)
+        target_link_libraries(gpu_example memory_pool)
+    endif()
 
     add_executable(custom_allocator_example examples/custom_allocator_example.cpp)
     target_link_libraries(custom_allocator_example memory_pool)
@@ -131,21 +161,25 @@ if(BUILD_TESTS)
     target_link_libraries(cpu_tests memory_pool)
     add_test(NAME cpu_tests COMMAND cpu_tests)
 
-    add_executable(gpu_tests tests/unit/gpu_tests.cpp)
-    target_link_libraries(gpu_tests memory_pool)
-    add_test(NAME gpu_tests COMMAND gpu_tests)
+    if(HAVE_CUDA)
+        add_executable(gpu_tests tests/unit/gpu_tests.cpp)
+        target_link_libraries(gpu_tests memory_pool)
+        add_test(NAME gpu_tests COMMAND gpu_tests)
+
+        add_executable(multi_gpu_tests tests/unit/multi_gpu_tests.cpp)
+        target_link_libraries(multi_gpu_tests memory_pool)
+        add_test(NAME multi_gpu_tests COMMAND multi_gpu_tests)
+    endif()
 
     add_executable(manager_tests tests/unit/manager_tests.cpp)
     target_link_libraries(manager_tests memory_pool)
     add_test(NAME manager_tests COMMAND manager_tests)
 
-    add_executable(numa_tests tests/unit/numa_tests.cpp)
-    target_link_libraries(numa_tests memory_pool)
-    add_test(NAME numa_tests COMMAND numa_tests)
-
-    add_executable(multi_gpu_tests tests/unit/multi_gpu_tests.cpp)
-    target_link_libraries(multi_gpu_tests memory_pool)
-    add_test(NAME multi_gpu_tests COMMAND multi_gpu_tests)
+    if(NUMA_FOUND)
+        add_executable(numa_tests tests/unit/numa_tests.cpp)
+        target_link_libraries(numa_tests memory_pool)
+        add_test(NAME numa_tests COMMAND numa_tests)
+    endif()
 
     add_executable(fuzz_tests tests/unit/fuzz_tests.cpp)
     target_link_libraries(fuzz_tests memory_pool)
@@ -172,11 +206,13 @@ if(BUILD_PERFORMANCE_TESTS)
     add_executable(cpu_benchmarks tests/performance/cpu_benchmarks.cpp)
     target_link_libraries(cpu_benchmarks memory_pool)
 
-    add_executable(gpu_benchmarks tests/performance/gpu_benchmarks.cpp)
-    target_link_libraries(gpu_benchmarks memory_pool)
+    if(HAVE_CUDA)
+        add_executable(gpu_benchmarks tests/performance/gpu_benchmarks.cpp)
+        target_link_libraries(gpu_benchmarks memory_pool)
 
-    add_executable(comparison_benchmarks tests/performance/comparison_benchmarks.cpp)
-    target_link_libraries(comparison_benchmarks memory_pool)
+        add_executable(comparison_benchmarks tests/performance/comparison_benchmarks.cpp)
+        target_link_libraries(comparison_benchmarks memory_pool)
+    endif()
 endif()
 
 # Doxygen documentation
