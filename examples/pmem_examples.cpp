@@ -1,9 +1,12 @@
 #include "memory_pool/memory_pool.hpp"
+#include "memory_pool/pmem/pmem_memory_pool.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
 
 #ifdef HAVE_PMEM
+
+using namespace memory_pool;
 
 void pmemBasicExample() {
     std::cout << "\n=== PMEM Basic Usage Example ===\n";
@@ -39,7 +42,7 @@ void pmemBasicExample() {
     std::cout << "Memory deallocated\n";
 
     // Get statistics
-    auto stats = pool->getStats();
+    const auto& stats = pool->getStats();
     std::cout << "PMEM Pool Statistics:\n" << stats.getStatsString() << std::endl;
 }
 
@@ -105,7 +108,7 @@ void pmemPersistenceExample() {
         std::cout << "(Note: In this example, the data layout would need to be managed more carefully)\n";
 
         // Get pool statistics
-        auto stats = pool->getStats();
+        const auto& stats = pool->getStats();
         std::cout << "Reloaded Pool Statistics:\n" << stats.getStatsString() << std::endl;
     }
 }

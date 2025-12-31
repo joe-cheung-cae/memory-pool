@@ -180,19 +180,18 @@ void* PMEMVariableSizeAllocator::splitBlock(FreeBlock* block, size_t size) {
     // Calculate remaining size after allocation
     size_t remainingSize = block->size - size;
 
-    // Set up block header
-    BlockHeader* header = reinterpret_cast<BlockHeader*>(
-        reinterpret_cast<char*>(block) - sizeof(BlockHeader));
+    // Set up block header at the start of the block
+    BlockHeader* header = reinterpret_cast<BlockHeader*>(block);
     header->size = size;
     header->isFree = false;
 
-    void* userPtr = block;
+    void* userPtr = reinterpret_cast<char*>(block) + sizeof(BlockHeader);
 
     // If there's remaining space, create a new free block
     if (remainingSize > sizeof(FreeBlock)) {
         FreeBlock* newFreeBlock = reinterpret_cast<FreeBlock*>(
             reinterpret_cast<char*>(block) + size);
-        newFreeBlock->size = remainingSize - sizeof(BlockHeader);
+        newFreeBlock->size = remainingSize;
         newFreeBlock->next = nullptr;
 
         // Add to appropriate free list
@@ -201,8 +200,8 @@ void* PMEMVariableSizeAllocator::splitBlock(FreeBlock* block, size_t size) {
         freeLists[sizeClass].store(newFreeBlock, std::memory_order_release);
     }
 
-    // Persist the allocation
-    persist(header, sizeof(BlockHeader) + size);
+    // Persist the allocation (header + user data)
+    persist(header, size);
 
     return userPtr;
 }

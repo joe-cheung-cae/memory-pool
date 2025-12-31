@@ -51,16 +51,18 @@ void* PMEMFixedSizeAllocator::allocate(size_t size) {
         static std::mutex allocMutex;
         std::lock_guard<std::mutex> lock(allocMutex);
 
-        if (!freeList) {
+        Block* current = freeList.load(std::memory_order_acquire);
+        if (!current) {
             allocateChunk(1);
+            current = freeList.load(std::memory_order_acquire);
         }
 
-        if (!freeList) {
+        if (!current) {
             throw OutOfMemoryException("Failed to allocate memory block");
         }
 
-        block = freeList;
-        freeList = freeList->next;
+        block = current;
+        freeList.store(current->next, std::memory_order_release);
     }
 
     usedBlocks.fetch_add(1, std::memory_order_relaxed);
@@ -87,8 +89,8 @@ void PMEMFixedSizeAllocator::deallocate(void* ptr) {
         static std::mutex deallocMutex;
         std::lock_guard<std::mutex> lock(deallocMutex);
 
-        block->next = freeList;
-        freeList = block;
+        block->next = freeList.load(std::memory_order_acquire);
+        freeList.store(block, std::memory_order_release);
     }
 
     usedBlocks.fetch_sub(1, std::memory_order_relaxed);

@@ -10,6 +10,8 @@
 
 #ifdef HAVE_PMEM
 
+using namespace memory_pool;
+
 void testPMEMFixedSizeAllocator() {
     std::cout << "Testing PMEM Fixed-Size Allocator...\n";
 
@@ -95,7 +97,7 @@ void testPMEMMemoryPool() {
     std::cout << "Deallocated block\n";
 
     // Test statistics
-    auto stats = pool.getStats();
+    const auto& stats = pool.getStats();
     std::cout << "Pool stats: " << stats.getStatsString() << std::endl;
 
     std::cout << "PMEM Memory Pool test passed!\n";
