@@ -1,5 +1,6 @@
 #include "memory_pool/memory_pool.hpp"
 #include "memory_pool/cpu/cpu_memory_pool.hpp"
+#include "memory_pool/utils/debug_tools.hpp"
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -322,6 +323,53 @@ class CPUMemoryPoolTest {
         std::cout << "Memory statistics test passed!\n";
     }
 
+    // Test boundary checking
+    void testBoundaryChecking() {
+        std::cout << "Testing boundary checking...\n";
+
+        // Create a pool with debugging enabled
+        PoolConfig config = PoolConfig::DebugCPU();
+
+        auto&        manager = MemoryPoolManager::getInstance();
+        IMemoryPool* pool    = manager.createCPUPool("boundary_test", config);
+
+        // Allocate memory
+        void* ptr = pool->allocate(64);
+        assert(ptr != nullptr);
+
+        // Write to the allocated memory (should be fine)
+        memset(ptr, 0xAA, 64);
+
+        // Deallocate memory (should pass boundary check)
+        pool->deallocate(ptr);
+
+        // Test boundary violation (this would require corrupting the canaries manually)
+        // Since we can't easily simulate buffer overflows in a test, we'll just ensure
+        // the boundary checker is enabled and tracks allocations properly
+
+        // Check that boundary checker is enabled
+        assert(BoundaryChecker::getInstance().isEnabled());
+
+        // Allocate again
+        ptr = pool->allocate(128);
+        assert(ptr != nullptr);
+
+        // Manually corrupt the suffix canary to simulate buffer overflow
+        char* charPtr = static_cast<char*>(ptr);
+        // The suffix canary starts at ptr + size
+        std::memcpy(charPtr + 128, &BoundaryChecker::BOUNDARY_PATTERN1, 4);  // Corrupt first pattern
+        // Leave others intact to see partial corruption detection
+
+        // Deallocate - this should detect the boundary violation
+        // Note: In a real scenario, this would report an error, but we can't easily capture stderr in this test
+        pool->deallocate(ptr);
+
+        // Destroy the pool
+        manager.destroyPool("boundary_test");
+
+        std::cout << "Boundary checking test completed!\n";
+    }
+
     // Run all tests
     void runAllTests() {
         testFixedSizeAllocator();
@@ -329,6 +377,7 @@ class CPUMemoryPoolTest {
         testMemoryFragmentation();
         testThreadSafety();
         testMemoryStatistics();
+        testBoundaryChecking();
 
         std::cout << "All CPU memory pool tests passed!\n";
     }

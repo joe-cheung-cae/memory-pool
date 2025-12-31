@@ -227,6 +227,76 @@ void benchmarkDeviceToDeviceTransfer() {
     std::cout << "Device-to-device transfer benchmark completed." << std::endl;
 }
 
+// Benchmark fragmentation
+void benchmarkFragmentation() {
+    std::cout << "Benchmarking GPU Memory Fragmentation..." << std::endl;
+
+    PoolConfig config;
+    config.allocatorType = AllocatorType::VariableSize;
+    config.initialSize = 64 * 1024 * 1024;  // 64MB initial size
+    config.deviceId = 0;
+    GPUMemoryPool pool("gpu_fragmentation_pool", config);
+
+    const int NUM_ALLOCS = 100;
+    std::vector<void*> pointers;
+    pointers.reserve(NUM_ALLOCS);
+
+    std::mt19937 rng(42);
+    std::uniform_int_distribution<size_t> sizeDist(MIN_SIZE, MAX_SIZE);
+
+    std::cout << "Initial fragmentation ratio: " << pool.getStats().getFragmentationRatio() << std::endl;
+
+    // Allocate many blocks
+    std::cout << "Allocating " << NUM_ALLOCS << " blocks..." << std::endl;
+    measureTime([&]() {
+        for (int i = 0; i < NUM_ALLOCS; ++i) {
+            size_t size = sizeDist(rng);
+            void* ptr = pool.allocate(size);
+            if (ptr) {
+                pointers.push_back(ptr);
+            }
+        }
+    }, 1);  // Only one iteration for this test
+
+    std::cout << "Successfully allocated " << pointers.size() << " blocks" << std::endl;
+    std::cout << "Fragmentation ratio after allocation: " << pool.getStats().getFragmentationRatio() << std::endl;
+
+    // Deallocate every other block to create fragmentation
+    std::cout << "Creating fragmentation by deallocating every other block..." << std::endl;
+    for (size_t i = 0; i < pointers.size(); i += 2) {
+        pool.deallocate(pointers[i]);
+        pointers[i] = nullptr;
+    }
+
+    std::cout << "Fragmentation ratio after deallocation: " << pool.getStats().getFragmentationRatio() << std::endl;
+
+    // Try to allocate large blocks
+    std::cout << "Attempting to allocate large blocks (64KB) in fragmented memory..." << std::endl;
+    std::vector<void*> largePointers;
+
+    measureTime([&]() {
+        for (int i = 0; i < 100; ++i) {
+            void* ptr = pool.allocate(64 * 1024);  // Try to allocate 64KB blocks
+            if (ptr) {
+                largePointers.push_back(ptr);
+            }
+        }
+    }, 1);
+
+    std::cout << "Successfully allocated " << largePointers.size() << " large blocks in fragmented memory" << std::endl;
+    std::cout << "Final fragmentation ratio: " << pool.getStats().getFragmentationRatio() << std::endl;
+
+    // Clean up
+    for (void* ptr : pointers) {
+        if (ptr) pool.deallocate(ptr);
+    }
+    for (void* ptr : largePointers) {
+        pool.deallocate(ptr);
+    }
+
+    std::cout << "Fragmentation benchmark completed." << std::endl;
+}
+
 // Benchmark memory pool manager GPU operations
 void benchmarkMemoryPoolManagerGPU() {
     std::cout << "Benchmarking MemoryPoolManager GPU Operations..." << std::endl;
@@ -311,6 +381,9 @@ int main() {
         std::cout << std::endl;
 
         benchmarkDeviceToDeviceTransfer();
+        std::cout << std::endl;
+
+        benchmarkFragmentation();
         std::cout << std::endl;
 
         benchmarkMemoryPoolManagerGPU();

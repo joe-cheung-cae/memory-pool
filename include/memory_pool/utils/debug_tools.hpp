@@ -81,6 +81,13 @@ class BoundaryChecker {
     void setEnabled(bool enable);
     bool isEnabled() const;
 
+    // Boundary marker constants
+    static constexpr uint32_t BOUNDARY_PATTERN1 = 0xFEEDFACE;
+    static constexpr uint32_t BOUNDARY_PATTERN2 = 0xDEADBEEF;
+    static constexpr uint32_t BOUNDARY_PATTERN3 = 0xBADC0FFE;
+    static constexpr uint32_t BOUNDARY_PATTERN4 = 0xCAFEBABE;
+    static constexpr size_t   BOUNDARY_SIZE     = 16;  // 4 patterns × 4 bytes
+
   private:
     BoundaryChecker();
     ~BoundaryChecker();
@@ -88,10 +95,6 @@ class BoundaryChecker {
     // Prevent copying
     BoundaryChecker(const BoundaryChecker&)            = delete;
     BoundaryChecker& operator=(const BoundaryChecker&) = delete;
-
-    // Boundary marker pattern
-    static constexpr uint32_t BOUNDARY_PATTERN = 0xFEEDFACE;
-    static constexpr size_t   BOUNDARY_SIZE    = sizeof(uint32_t);
 
     // Allocation tracking
     struct BoundaryRecord {
@@ -107,6 +110,7 @@ class BoundaryChecker {
     // Helper methods
     bool  checkBoundaries(void* ptr, const BoundaryRecord& record);
     void* addBoundaryMarkers(void* ptr, size_t size);
+    static std::string captureStackTrace();
 };
 
 // Performance tracker for memory operations

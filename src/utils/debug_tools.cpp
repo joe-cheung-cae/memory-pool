@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
+#include <execinfo.h>
+#include <cxxabi.h>
 
 namespace memory_pool {
 
@@ -131,14 +133,46 @@ void MemoryLeakDetector::setEnabled(bool enable) {
 bool MemoryLeakDetector::isEnabled() const { return enabled; }
 
 std::string MemoryLeakDetector::captureStackTrace() {
-    // This is a placeholder for actual stack trace capture
-    // In a real implementation, this would use platform-specific
-    // mechanisms to capture the call stack
+    const int maxFrames = 32;
+    void* frames[maxFrames];
+    int numFrames = backtrace(frames, maxFrames);
+    char** symbols = backtrace_symbols(frames, numFrames);
 
-    // For example, on Linux you might use backtrace() and backtrace_symbols()
-    // On Windows, you might use CaptureStackBackTrace() and SymFromAddr()
+    std::ostringstream oss;
+    oss << "Stack trace:\n";
 
-    return "Stack trace capture not implemented";
+    for (int i = 0; i < numFrames; ++i) {
+        // Demangle C++ symbols
+        char* symbol = symbols[i];
+        char* mangled = nullptr;
+
+        // Find the mangled name between '(' and '+'
+        char* openParen = strchr(symbol, '(');
+        if (openParen) {
+            char* plus = strchr(openParen, '+');
+            if (plus) {
+                *plus = '\0';
+                mangled = openParen + 1;
+
+                int status;
+                char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+                if (status == 0 && demangled) {
+                    oss << "  " << i << ": " << demangled << "\n";
+                    free(demangled);
+                } else {
+                    oss << "  " << i << ": " << mangled << "\n";
+                }
+                *plus = '+';  // Restore
+            } else {
+                oss << "  " << i << ": " << symbol << "\n";
+            }
+        } else {
+            oss << "  " << i << ": " << symbol << "\n";
+        }
+    }
+
+    free(symbols);
+    return oss.str();
 }
 
 // Boundary Checker implementation
@@ -167,8 +201,7 @@ void* BoundaryChecker::trackAllocation(void* ptr, size_t size) {
     BoundaryRecord record;
     record.originalPtr = ptr;
     record.size        = size;
-    // Use a placeholder for the stack trace
-    record.stackTrace = "Stack trace capture not implemented";
+    record.stackTrace  = captureStackTrace();
 
     trackedAllocations[markedPtr] = record;
 
@@ -276,19 +309,21 @@ bool BoundaryChecker::checkBoundaries(void* ptr, const BoundaryRecord& record) {
     // Check the boundary markers
     char* charPtr = static_cast<char*>(ptr);
 
-    // Check the prefix marker (before the user data)
-    uint32_t prefixMarker;
-    std::memcpy(&prefixMarker, charPtr - BOUNDARY_SIZE, BOUNDARY_SIZE);
+    // Check the prefix markers (before the user data)
+    uint32_t prefixMarkers[4];
+    std::memcpy(prefixMarkers, charPtr - BOUNDARY_SIZE, BOUNDARY_SIZE);
 
-    if (prefixMarker != BOUNDARY_PATTERN) {
+    if (prefixMarkers[0] != BOUNDARY_PATTERN1 || prefixMarkers[1] != BOUNDARY_PATTERN2 ||
+        prefixMarkers[2] != BOUNDARY_PATTERN3 || prefixMarkers[3] != BOUNDARY_PATTERN4) {
         return false;
     }
 
-    // Check the suffix marker (after the user data)
-    uint32_t suffixMarker;
-    std::memcpy(&suffixMarker, charPtr + record.size, BOUNDARY_SIZE);
+    // Check the suffix markers (after the user data)
+    uint32_t suffixMarkers[4];
+    std::memcpy(suffixMarkers, charPtr + record.size, BOUNDARY_SIZE);
 
-    if (suffixMarker != BOUNDARY_PATTERN) {
+    if (suffixMarkers[0] != BOUNDARY_PATTERN1 || suffixMarkers[1] != BOUNDARY_PATTERN2 ||
+        suffixMarkers[2] != BOUNDARY_PATTERN3 || suffixMarkers[3] != BOUNDARY_PATTERN4) {
         return false;
     }
 
@@ -299,16 +334,61 @@ void* BoundaryChecker::addBoundaryMarkers(void* ptr, size_t size) {
     // Add boundary markers before and after the user data
     char* charPtr = static_cast<char*>(ptr);
 
-    // Add the prefix marker
-    std::memcpy(charPtr, &BOUNDARY_PATTERN, BOUNDARY_SIZE);
+    // Add the prefix markers
+    uint32_t prefixMarkers[4] = {BOUNDARY_PATTERN1, BOUNDARY_PATTERN2, BOUNDARY_PATTERN3, BOUNDARY_PATTERN4};
+    std::memcpy(charPtr, prefixMarkers, BOUNDARY_SIZE);
 
     // The user data starts after the prefix marker
     void* userPtr = charPtr + BOUNDARY_SIZE;
 
-    // Add the suffix marker
-    std::memcpy(charPtr + BOUNDARY_SIZE + size, &BOUNDARY_PATTERN, BOUNDARY_SIZE);
+    // Add the suffix markers
+    uint32_t suffixMarkers[4] = {BOUNDARY_PATTERN1, BOUNDARY_PATTERN2, BOUNDARY_PATTERN3, BOUNDARY_PATTERN4};
+    std::memcpy(charPtr + BOUNDARY_SIZE + size, suffixMarkers, BOUNDARY_SIZE);
 
     return userPtr;
+}
+
+std::string BoundaryChecker::captureStackTrace() {
+    const int maxFrames = 32;
+    void* frames[maxFrames];
+    int numFrames = backtrace(frames, maxFrames);
+    char** symbols = backtrace_symbols(frames, numFrames);
+
+    std::ostringstream oss;
+    oss << "Stack trace:\n";
+
+    for (int i = 0; i < numFrames; ++i) {
+        // Demangle C++ symbols
+        char* symbol = symbols[i];
+        char* mangled = nullptr;
+
+        // Find the mangled name between '(' and '+'
+        char* openParen = strchr(symbol, '(');
+        if (openParen) {
+            char* plus = strchr(openParen, '+');
+            if (plus) {
+                *plus = '\0';
+                mangled = openParen + 1;
+
+                int status;
+                char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+                if (status == 0 && demangled) {
+                    oss << "  " << i << ": " << demangled << "\n";
+                    free(demangled);
+                } else {
+                    oss << "  " << i << ": " << mangled << "\n";
+                }
+                *plus = '+';  // Restore
+            } else {
+                oss << "  " << i << ": " << symbol << "\n";
+            }
+        } else {
+            oss << "  " << i << ": " << symbol << "\n";
+        }
+    }
+
+    free(symbols);
+    return oss.str();
 }
 
 // Performance Tracker implementation

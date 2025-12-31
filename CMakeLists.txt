@@ -117,6 +117,10 @@ if(BUILD_TESTS)
     target_link_libraries(multi_gpu_tests memory_pool)
     add_test(NAME multi_gpu_tests COMMAND multi_gpu_tests)
 
+    add_executable(fuzz_tests tests/unit/fuzz_tests.cpp)
+    target_link_libraries(fuzz_tests memory_pool)
+    add_test(NAME fuzz_tests COMMAND fuzz_tests 2)  # Run for 2 seconds
+
     # Integration tests
     add_executable(cpu_gpu_integration_tests tests/integration/cpu_gpu_integration_tests.cpp)
     target_link_libraries(cpu_gpu_integration_tests memory_pool)

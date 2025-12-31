@@ -21,9 +21,14 @@ void CPUMemoryPool::initialize() {
     // Create the appropriate allocator based on the configuration
     if (config.allocatorType == AllocatorType::FixedSize) {
         allocator = std::make_unique<FixedSizeAllocator>(config.blockSize, config.initialSize / config.blockSize,
-                                                         config.alignment, config.syncType == SyncType::LockFree);
+                                                          config.alignment, config.syncType == SyncType::LockFree);
     } else {
         allocator = std::make_unique<VariableSizeAllocator>(config.initialSize, config.alignment);
+    }
+
+    // Enable debugging tools if configured
+    if (config.enableDebugging) {
+        enableDebugging(true);
     }
 }
 
@@ -37,20 +42,31 @@ void* CPUMemoryPool::allocateInternal(size_t size, AllocFlags flags) {
     }
 
     void* ptr = nullptr;
+    size_t actualSize = size;
+
+    // If boundary checking is enabled, allocate extra space for canaries
+    if (BoundaryChecker::getInstance().isEnabled()) {
+        actualSize += 2 * BoundaryChecker::BOUNDARY_SIZE;
+    }
 
     // Use thread safety if configured
     if (config.threadSafe) {
         std::lock_guard<std::mutex> lock(mutex);
-        ptr = allocator->allocate(size);
+        ptr = allocator->allocate(actualSize);
     } else {
-        ptr = allocator->allocate(size);
+        ptr = allocator->allocate(actualSize);
     }
 
     if (ptr == nullptr) {
         throw OutOfMemoryException("Failed to allocate memory in CPU pool: " + name);
     }
 
-    // Zero memory if requested
+    // If boundary checking is enabled, add canary markers
+    if (BoundaryChecker::getInstance().isEnabled()) {
+        ptr = BoundaryChecker::getInstance().trackAllocation(ptr, size);
+    }
+
+    // Zero memory if requested (only the user data, not canaries)
     if (has_flag(flags, AllocFlags::ZeroMemory)) {
         std::memset(ptr, 0, size);
     }
@@ -74,22 +90,37 @@ void CPUMemoryPool::deallocate(void* ptr) {
         return;
     }
 
-    size_t size = 0;
+    // Handle boundary checking
+    bool boundaryEnabled = BoundaryChecker::getInstance().isEnabled();
+    void* trackPtr = ptr;  // User ptr for tracking
+
+    if (boundaryEnabled) {
+        if (!BoundaryChecker::getInstance().checkAndDeallocate(ptr)) {
+            // Boundary violation detected, but continue with deallocation
+        }
+        // Adjust ptr back to the original allocated ptr for allocator
+        ptr = static_cast<char*>(ptr) - BoundaryChecker::BOUNDARY_SIZE;
+    }
+
+    size_t allocatedSize = 0;
+    size_t userSize = 0;
 
     // Use thread safety if configured
     if (config.threadSafe) {
         std::lock_guard<std::mutex> lock(mutex);
 
-        // Get the size before deallocating for statistics
+        // Get the allocated size before deallocating for statistics
         if (config.trackStats) {
-            size = allocator->getBlockSize(ptr);
+            allocatedSize = allocator->getBlockSize(ptr);
+            userSize = boundaryEnabled ? allocatedSize - 2 * BoundaryChecker::BOUNDARY_SIZE : allocatedSize;
         }
 
         allocator->deallocate(ptr);
     } else {
-        // Get the size before deallocating for statistics
+        // Get the allocated size before deallocating for statistics
         if (config.trackStats) {
-            size = allocator->getBlockSize(ptr);
+            allocatedSize = allocator->getBlockSize(ptr);
+            userSize = boundaryEnabled ? allocatedSize - 2 * BoundaryChecker::BOUNDARY_SIZE : allocatedSize;
         }
 
         allocator->deallocate(ptr);
@@ -97,11 +128,11 @@ void CPUMemoryPool::deallocate(void* ptr) {
 
     // Track statistics if enabled
     if (config.trackStats) {
-        stats.recordDeallocation(size);
+        stats.recordDeallocation(userSize);
 
         if (config.enableDebugging) {
-            stats.trackDeallocation(ptr);
-            MemoryLeakDetector::getInstance().trackDeallocation(ptr, name);
+            stats.trackDeallocation(trackPtr);
+            MemoryLeakDetector::getInstance().trackDeallocation(trackPtr, name);
         }
     }
 }

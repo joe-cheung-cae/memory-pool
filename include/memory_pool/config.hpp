@@ -61,7 +61,11 @@ struct PoolConfig {
     size_t maxSize      = 0;  // 0 means no limit
 
     /** @brief Default constructor */
-    PoolConfig() = default;
+    PoolConfig() {
+#ifndef NDEBUG
+        enableDebugging = true;  // Enable debugging in debug builds by default
+#endif
+    }
 
     /**
      * @brief Creates a default CPU pool configuration.

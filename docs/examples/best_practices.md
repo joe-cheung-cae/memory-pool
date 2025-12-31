@@ -180,19 +180,19 @@ if (data) {
 - Enable debugging in development builds
 - Use memory leak detection tools
 - Check allocation statistics
+- Boundary checking prevents buffer overflows
 
 ```cpp
 PoolConfig debugConfig = PoolConfig::DebugCPU();
 auto* pool = manager.createCPUPool("debug_pool", debugConfig);
 
-// At application exit
-const auto& stats = pool->getStats();
-if (stats.hasMemoryLeaks()) {
-    std::cerr << "Memory leaks detected!" << std::endl;
-    auto leaks = stats.getActiveAllocations();
-    for (const auto& leak : leaks) {
-        std::cerr << "Leak: " << leak.size << " bytes at " << leak.ptr << std::endl;
-    }
+// Boundary checking is automatically enabled in debug builds
+// It adds canary values around allocations to detect buffer overflows
+
+// At application exit, check for boundary violations
+std::string report = getMemoryReport();
+if (!report.empty()) {
+    std::cout << "Memory report:\n" << report << std::endl;
 }
 ```
 

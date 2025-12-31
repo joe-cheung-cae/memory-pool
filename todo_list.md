@@ -34,11 +34,11 @@
   - **Steps**: Implement stream-based transfers, add async transfer APIs
 
 ### Security and Safety Improvements
-- [ ] Enhance boundary checking in debug builds
+- [x] Enhance boundary checking in debug builds
   - **Rationale**: Current checks are basic
   - **Impact**: Better debugging, prevent buffer overflows
   - **Steps**: Add canary values, implement bounds checking
-- [ ] Add fuzz testing for allocation edge cases
+- [x] Add fuzz testing for allocation edge cases
   - **Rationale**: Ensure robustness against malformed inputs
   - **Impact**: Higher reliability, fewer crashes
   - **Steps**: Create fuzz tests for allocation sizes, add to CI pipeline
@@ -54,14 +54,10 @@
   - **Steps**: Add Windows-specific guides, macOS support if applicable
 
 ### Testing and Validation
-- [ ] Extend performance benchmarks to include memory fragmentation scenarios
+- [x] Extend performance benchmarks to include memory fragmentation scenarios
   - **Rationale**: Current benchmarks don't stress fragmentation
   - **Impact**: Better understanding of long-term performance
   - **Steps**: Add fragmentation stress tests, monitor memory efficiency over time
-- [ ] Add continuous integration performance regression detection
-  - **Rationale**: Prevent performance degradation
-  - **Impact**: Maintain performance standards
-  - **Steps**: Set up automated benchmarks in CI, alert on regressions
 
 ### Future Extensions
 - [ ] Implement persistent memory support

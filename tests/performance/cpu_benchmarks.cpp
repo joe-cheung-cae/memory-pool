@@ -136,15 +136,19 @@ void benchmarkFragmentation() {
     std::mt19937 rng(42);
     std::uniform_int_distribution<size_t> sizeDist(MIN_SIZE, MAX_SIZE);
 
+    std::cout << "Initial fragmentation ratio: " << pool.getStats().getFragmentationRatio() << std::endl;
+
     // Allocate many blocks
     std::cout << "Allocating " << NUM_ALLOCS << " blocks..." << std::endl;
-    auto allocTime = measureTime([&]() {
+    measureTime([&]() {
         for (int i = 0; i < NUM_ALLOCS; ++i) {
             size_t size = sizeDist(rng);
             void* ptr = pool.allocate(size);
             pointers.push_back(ptr);
         }
     }, 1);  // Only one iteration for this test
+
+    std::cout << "Fragmentation ratio after allocation: " << pool.getStats().getFragmentationRatio() << std::endl;
 
     // Deallocate every other block to create fragmentation
     std::cout << "Creating fragmentation by deallocating every other block..." << std::endl;
@@ -157,7 +161,7 @@ void benchmarkFragmentation() {
     std::cout << "Attempting to allocate large blocks in fragmented memory..." << std::endl;
     std::vector<void*> largePointers;
 
-    auto fragTime = measureTime([&]() {
+    measureTime([&]() {
         for (int i = 0; i < 100; ++i) {
             void* ptr = pool.allocate(MAX_SIZE * 2);  // Try to allocate large blocks
             if (ptr) {
@@ -165,6 +169,8 @@ void benchmarkFragmentation() {
             }
         }
     }, 1);
+
+    std::cout << "Final fragmentation ratio: " << pool.getStats().getFragmentationRatio() << std::endl;
 
     std::cout << "Successfully allocated " << largePointers.size() << " large blocks in fragmented memory" << std::endl;
 
