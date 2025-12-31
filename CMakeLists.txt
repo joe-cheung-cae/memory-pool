@@ -82,6 +82,9 @@ set(SOURCES
     src/utils/debug_tools.cpp
     src/utils/error_handling.cpp
     src/utils/numa_utils.cpp
+    src/custom/custom_allocator.cpp
+    src/custom/custom_memory_pool.cpp
+    src/custom/rdma_allocator.cpp
 )
 
 if(PMEM_FOUND)
@@ -109,6 +112,9 @@ if(BUILD_EXAMPLES)
 
     add_executable(gpu_example examples/gpu_examples.cpp)
     target_link_libraries(gpu_example memory_pool)
+
+    add_executable(custom_allocator_example examples/custom_allocator_example.cpp)
+    target_link_libraries(custom_allocator_example memory_pool)
 
     if(PMEM_FOUND)
         add_executable(pmem_example examples/pmem_examples.cpp)
@@ -144,6 +150,10 @@ if(BUILD_TESTS)
     add_executable(fuzz_tests tests/unit/fuzz_tests.cpp)
     target_link_libraries(fuzz_tests memory_pool)
     add_test(NAME fuzz_tests COMMAND fuzz_tests 2)  # Run for 2 seconds
+
+    add_executable(custom_allocator_tests tests/unit/custom_allocator_tests.cpp)
+    target_link_libraries(custom_allocator_tests memory_pool)
+    add_test(NAME custom_allocator_tests COMMAND custom_allocator_tests)
 
     if(PMEM_FOUND)
         add_executable(pmem_tests tests/unit/pmem_tests.cpp)

@@ -2,6 +2,8 @@
 #include "memory_pool/cpu/cpu_memory_pool.hpp"
 #include "memory_pool/gpu/gpu_memory_pool.hpp"
 #include "memory_pool/gpu/cuda_utils.hpp"
+#include "memory_pool/custom/custom_allocator.hpp"
+#include "memory_pool/custom/custom_memory_pool.hpp"
 #include "memory_pool/utils/error_handling.hpp"
 #include <stdexcept>
 #include <algorithm>
@@ -237,6 +239,58 @@ IMemoryPool* MemoryPoolManager::createPMEMPool(const std::string& name, const Po
 }
 
 #endif  // HAVE_PMEM
+
+IMemoryPool* MemoryPoolManager::getCustomPool(const std::string& name) {
+    std::lock_guard<std::mutex> lock(poolsMutex);
+
+    auto it = pools.find(name);
+    if (it != pools.end() && it->second->getMemoryType() == MemoryType::Custom) {
+        return it->second.get();
+    }
+
+    reportError(ErrorSeverity::Warning, "MemoryPoolManager: Custom pool '" + name + "' not found");
+    return nullptr;
+}
+
+IMemoryPool* MemoryPoolManager::createCustomPool(const std::string& name, const PoolConfig& config) {
+    std::lock_guard<std::mutex> lock(poolsMutex);
+
+    // Check if a pool with this name already exists
+    if (pools.find(name) != pools.end()) {
+        reportError(ErrorSeverity::Warning, "MemoryPoolManager: Pool '" + name + "' already exists");
+        return pools[name].get();
+    }
+
+    // Check if allocator type is Custom
+    if (config.allocatorType != AllocatorType::Custom) {
+        reportError(ErrorSeverity::Error, "MemoryPoolManager: Pool config must have allocatorType = Custom for custom pools");
+        return nullptr;
+    }
+
+    // Create custom allocator
+    std::unique_ptr<ICustomAllocator> customAllocator;
+    try {
+        customAllocator = CustomAllocatorRegistry::createAllocator(config.hardwareType, config.hardwareConfig);
+    } catch (const std::exception& e) {
+        reportError(ErrorSeverity::Error, std::string("MemoryPoolManager: Failed to create custom allocator: ") + e.what());
+        return nullptr;
+    }
+
+    if (!customAllocator) {
+        reportError(ErrorSeverity::Error, "MemoryPoolManager: Failed to create custom allocator for hardware type " +
+                   std::to_string(static_cast<int>(config.hardwareType)));
+        return nullptr;
+    }
+
+    // Create custom memory pool
+    auto pool = std::make_unique<CustomMemoryPool>(name, config, std::move(customAllocator));
+    IMemoryPool* poolPtr = pool.get();
+
+    // Add the pool to the map
+    pools[name] = std::move(pool);
+
+    return poolPtr;
+}
 
 // Helper functions for common operations
 void* allocate(size_t size, const std::string& poolName) {

@@ -134,6 +134,21 @@ class MemoryPoolManager {
     IMemoryPool* createPMEMPool(const std::string& name, const PoolConfig& config);
 
     /**
+     * @brief Gets an existing custom memory pool by name.
+     * @param name The name of the pool to retrieve.
+     * @return Pointer to the memory pool, or nullptr if not found.
+     */
+    IMemoryPool* getCustomPool(const std::string& name);
+
+    /**
+     * @brief Creates a new custom memory pool with the specified configuration.
+     * @param name The name for the new pool.
+     * @param config The configuration for the pool (must have allocatorType = Custom).
+     * @return Pointer to the created memory pool.
+     */
+    IMemoryPool* createCustomPool(const std::string& name, const PoolConfig& config);
+
+    /**
      * @brief Destroys a memory pool by name.
      * @param name The name of the pool to destroy.
      * @return True if the pool was successfully destroyed, false otherwise.

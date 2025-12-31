@@ -3,7 +3,10 @@
 
 #include <cstddef>
 #include <string>
+#include <variant>
+#include <unordered_map>
 #include "common.hpp"
+#include "custom/custom_types.hpp"
 
 namespace memory_pool {
 
@@ -12,7 +15,8 @@ namespace memory_pool {
  */
 enum class AllocatorType {
     FixedSize,    /**< Fixed-size block allocator for uniform allocations */
-    VariableSize  /**< Variable-size allocator for arbitrary allocation sizes */
+    VariableSize, /**< Variable-size allocator for arbitrary allocation sizes */
+    Custom        /**< Custom allocator for specialized hardware */
 };
 
 /**
@@ -64,6 +68,11 @@ struct PoolConfig {
     size_t growthFactor = 2;  // How much to grow when out of memory
     /** @brief Maximum pool size (0 means no limit) */
     size_t maxSize      = 0;  // 0 means no limit
+
+    /** @brief Hardware type for custom allocators */
+    HardwareType hardwareType = HardwareType::Custom;
+    /** @brief Hardware configuration for custom allocators */
+    HardwareConfig hardwareConfig;
 
     /** @brief Default constructor */
     PoolConfig() {

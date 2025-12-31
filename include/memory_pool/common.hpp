@@ -88,7 +88,7 @@ inline size_t align_size(size_t size, size_t alignment = DEFAULT_ALIGNMENT) {
 /**
  * @brief Enumeration for memory types.
  */
-enum class MemoryType { CPU, GPU, PMEM };
+enum class MemoryType { CPU, GPU, PMEM, Custom };
 
 /**
  * @brief Flags for memory allocation options.
