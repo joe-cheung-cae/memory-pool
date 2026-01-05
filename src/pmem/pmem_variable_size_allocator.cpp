@@ -7,9 +7,10 @@
 namespace memory_pool {
 
 PMEMVariableSizeAllocator::PMEMVariableSizeAllocator(const std::string& poolPath, size_t poolSize,
-                                                   size_t alignment, bool lockFree)
+                                                    size_t alignment, bool lockFree)
     : poolPath(poolPath), poolSize(poolSize), pmemAddr(nullptr), mappedLen(0), isPmem(0),
-      alignment(alignment), lockFree(lockFree), totalAllocated(0), currentUsed(0) {
+      alignment(alignment), totalAllocated(0), currentUsed(0) {
+    (void)lockFree;
     initializePMEM();
 
     // Initialize with one large free block
@@ -207,6 +208,7 @@ void* PMEMVariableSizeAllocator::splitBlock(FreeBlock* block, size_t size) {
 }
 
 void PMEMVariableSizeAllocator::coalesceBlock(FreeBlock* block) {
+    (void)block;
     // For simplicity, we'll skip complex coalescing in this implementation
     // A full implementation would check adjacent blocks and merge them
 }

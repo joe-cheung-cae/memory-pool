@@ -113,11 +113,14 @@ IMemoryPool* MemoryPoolManager::createGPUPool(const std::string& name, const Poo
 #else  // HAVE_CUDA
 
 IMemoryPool* MemoryPoolManager::getGPUPool(const std::string& name) {
+    (void)name;
     reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
     return nullptr;
 }
 
 IMemoryPool* MemoryPoolManager::createGPUPool(const std::string& name, const PoolConfig& config) {
+    (void)name;
+    (void)config;
     reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
     return nullptr;
 }
@@ -224,10 +227,12 @@ int MemoryPoolManager::getGPUDeviceCount() {
 }
 
 bool MemoryPoolManager::isGPUDeviceAvailable(int deviceId) {
+    (void)deviceId;
     return false;
 }
 
 size_t MemoryPoolManager::getGPUDeviceMemory(int deviceId) {
+    (void)deviceId;
     return 0;
 }
 
@@ -236,6 +241,8 @@ int MemoryPoolManager::selectBestGPUDevice() {
 }
 
 IMemoryPool* MemoryPoolManager::createGPUPoolForDevice(int deviceId, const PoolConfig& config) {
+    (void)deviceId;
+    (void)config;
     reportError(ErrorSeverity::Error, "MemoryPoolManager: GPU support not available - CUDA not found");
     return nullptr;
 }
@@ -411,14 +418,20 @@ void deallocateGPU(void* ptr, const std::string& poolName) {
 #else  // HAVE_CUDA
 
 void* allocateGPU(size_t size, const std::string& poolName) {
+    (void)size;
+    (void)poolName;
     throw InvalidOperationException("GPU support not available - CUDA not found");
 }
 
 void* allocateGPU(size_t size, int deviceId) {
+    (void)size;
+    (void)deviceId;
     throw InvalidOperationException("GPU support not available - CUDA not found");
 }
 
 void deallocateGPU(void* ptr, const std::string& poolName) {
+    (void)ptr;
+    (void)poolName;
     throw InvalidOperationException("GPU support not available - CUDA not found");
 }
 

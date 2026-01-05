@@ -129,7 +129,6 @@ class PMEMFixedSizeAllocator : public IAllocator {
     // Allocator properties
     size_t blockSize;
     size_t alignedBlockSize;
-    size_t alignment;
     bool   lockFree;
 
     // Memory management

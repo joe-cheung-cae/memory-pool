@@ -113,7 +113,6 @@ class PMEMVariableSizeAllocator : public IAllocator {
 
     // Allocator properties
     size_t alignment;
-    bool   lockFree;
 
     // Free lists for different size classes
     std::map<size_t, std::atomic<FreeBlock*>> freeLists;

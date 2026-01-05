@@ -419,6 +419,7 @@ void PerformanceTracker::trackAllocation(size_t size, double timeMs, const std::
 }
 
 void PerformanceTracker::trackDeallocation(size_t size, double timeMs, const std::string& poolName) {
+    (void)size;
     if (!enabled) {
         return;
     }

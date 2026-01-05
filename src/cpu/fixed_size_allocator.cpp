@@ -124,6 +124,7 @@ void FixedSizeAllocator::reset() {
 }
 
 size_t FixedSizeAllocator::getBlockSize(void* ptr) const {
+    (void)ptr;
     // All blocks have the same size
     return blockSize;
 }

@@ -11,7 +11,7 @@ PMEMFixedSizeAllocator::PMEMFixedSizeAllocator(const std::string& poolPath, size
                                              size_t alignment, bool lockFree)
     : poolPath(poolPath), poolSize(poolSize), pmemAddr(nullptr), mappedLen(0), isPmem(0),
       blockSize(blockSize), alignedBlockSize(align_size(blockSize, alignment)),
-      alignment(alignment), lockFree(lockFree), freeList(nullptr),
+      lockFree(lockFree), freeList(nullptr),
       totalBlocks(0), usedBlocks(0) {
     initializePMEM();
     allocateChunk(initialBlocks);
